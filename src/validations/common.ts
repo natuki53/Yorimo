@@ -20,3 +20,8 @@ export const paginationQuerySchema = z.object({
 export const optionalNullableString = z.string().trim().min(1).nullable().optional();
 
 export const tagsSchema = z.array(z.string().trim().min(1)).default([]);
+
+export const optionalNullableNonNegativeInt = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? null : value),
+  z.coerce.number().int().min(0).finite().nullable().optional()
+);

@@ -60,8 +60,34 @@ export const openApiSpec = {
           homeStation: { type: "string", nullable: true, example: "吉祥寺" },
           schoolOrWorkStation: { type: "string", nullable: true, example: "渋谷" },
           interests: { type: "array", items: { type: "string" }, example: ["カフェ", "スイーツ"] },
-          defaultBudgetMin: { type: "integer", nullable: true, example: 0 },
-          defaultBudgetMax: { type: "integer", nullable: true, example: 1500 }
+          defaultBudget: {
+            type: "integer",
+            minimum: 0,
+            nullable: true,
+            description: "単一スライダーで指定するデフォルト予算上限。defaultBudgetMax が未指定の場合に使われます。",
+            example: 1500
+          },
+          defaultBudgetMin: { type: "integer", minimum: 0, nullable: true, example: 0 },
+          defaultBudgetMax: { type: "integer", minimum: 0, nullable: true, example: 1500 }
+        }
+      },
+      UpdateProfileRequest: {
+        type: "object",
+        properties: {
+          name: { type: "string", example: "Yorimo User" },
+          ageRange: { type: "string", nullable: true, example: "18-22" },
+          homeStation: { type: "string", nullable: true, example: "吉祥寺" },
+          schoolOrWorkStation: { type: "string", nullable: true, example: "渋谷" },
+          interests: { type: "array", items: { type: "string" }, example: ["カフェ", "スイーツ"] },
+          defaultBudget: {
+            type: "integer",
+            minimum: 0,
+            nullable: true,
+            description: "単一スライダーで指定するデフォルト予算上限。defaultBudgetMax が未指定の場合に使われます。",
+            example: 1500
+          },
+          defaultBudgetMin: { type: "integer", minimum: 0, nullable: true, example: 0 },
+          defaultBudgetMax: { type: "integer", minimum: 0, nullable: true, example: 1500 }
         }
       },
       LoginRequest: {
@@ -115,8 +141,15 @@ export const openApiSpec = {
           currentLng: { type: "number", example: 139.767125 },
           routeId: { type: "string", nullable: true },
           availableMinutes: { type: "integer", example: 45 },
-          budgetMin: { type: "integer", nullable: true, example: 0 },
-          budgetMax: { type: "integer", nullable: true, example: 1500 },
+          budget: {
+            type: "integer",
+            minimum: 0,
+            nullable: true,
+            description: "単一スライダーで指定する予算上限。budgetMax が未指定の場合に上限として使われます。",
+            example: 1500
+          },
+          budgetMin: { type: "integer", minimum: 0, nullable: true, example: 0 },
+          budgetMax: { type: "integer", minimum: 0, nullable: true, example: 1500 },
           mood: { type: "string", nullable: true, example: "甘いものを食べたい" },
           interestTags: { type: "array", items: { type: "string" }, example: ["スイーツ", "カフェ"] }
         }
@@ -181,7 +214,7 @@ export const openApiSpec = {
         security: [{ bearerAuth: [] }],
         summary: "プロフィール更新",
         requestBody: {
-          content: { "application/json": { schema: { $ref: "#/components/schemas/RegisterRequest" } } }
+          content: { "application/json": { schema: { $ref: "#/components/schemas/UpdateProfileRequest" } } }
         },
         responses: { "200": { description: "Updated" } }
       }
@@ -217,8 +250,8 @@ export const openApiSpec = {
         parameters: [
           { in: "query", name: "category", schema: { type: "string" } },
           { in: "query", name: "tag", schema: { type: "string" } },
-          { in: "query", name: "minBudget", schema: { type: "integer" } },
-          { in: "query", name: "maxBudget", schema: { type: "integer" } },
+          { in: "query", name: "minBudget", schema: { type: "integer", minimum: 0 } },
+          { in: "query", name: "maxBudget", schema: { type: "integer", minimum: 0 } },
           { in: "query", name: "lat", schema: { type: "number" } },
           { in: "query", name: "lng", schema: { type: "number" } },
           { in: "query", name: "radiusKm", schema: { type: "number" } },

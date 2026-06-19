@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { tagsSchema } from "./common.js";
+import { optionalNullableNonNegativeInt, tagsSchema } from "./common.js";
 
 const spotBaseSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -33,8 +33,8 @@ export const spotUpdateSchema = spotBaseSchema
 export const spotQuerySchema = z.object({
   category: z.string().trim().min(1).optional(),
   tag: z.string().trim().min(1).optional(),
-  minBudget: z.coerce.number().int().min(0).optional(),
-  maxBudget: z.coerce.number().int().min(0).optional(),
+  minBudget: optionalNullableNonNegativeInt,
+  maxBudget: optionalNullableNonNegativeInt,
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
   radiusKm: z.coerce.number().positive().max(100).optional(),

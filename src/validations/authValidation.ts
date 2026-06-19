@@ -1,10 +1,18 @@
 import { z } from "zod";
-import { optionalNullableString, tagsSchema } from "./common.js";
+import { optionalNullableNonNegativeInt, optionalNullableString, tagsSchema } from "./common.js";
 
 const budgetFields = {
-  defaultBudgetMin: z.number().int().min(0).nullable().optional(),
-  defaultBudgetMax: z.number().int().min(0).nullable().optional()
+  defaultBudget: optionalNullableNonNegativeInt,
+  defaultBudgetMin: optionalNullableNonNegativeInt,
+  defaultBudgetMax: optionalNullableNonNegativeInt
 };
+
+const normalizeDefaultBudget = <T extends { defaultBudget?: number | null; defaultBudgetMax?: number | null }>(
+  value: T
+) => ({
+  ...value,
+  defaultBudgetMax: value.defaultBudgetMax ?? value.defaultBudget
+});
 
 export const registerSchema = z
   .object({
@@ -17,6 +25,7 @@ export const registerSchema = z
     interests: tagsSchema.optional(),
     ...budgetFields
   })
+  .transform(normalizeDefaultBudget)
   .refine(
     (value) =>
       value.defaultBudgetMin == null ||
@@ -42,6 +51,7 @@ export const updateProfileSchema = z
     interests: tagsSchema.optional(),
     ...budgetFields
   })
+  .transform(normalizeDefaultBudget)
   .refine(
     (value) =>
       value.defaultBudgetMin == null ||
