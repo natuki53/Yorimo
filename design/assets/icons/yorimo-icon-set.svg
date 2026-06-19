@@ -1,0 +1,146 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#833AB4"/>
+      <stop offset="0.42" stop-color="#E1306C"/>
+      <stop offset="0.76" stop-color="#F77737"/>
+      <stop offset="1" stop-color="#FCAF45"/>
+    </linearGradient>
+    <style>
+      .title { font: 800 34px Outfit, Arial, sans-serif; fill: #0F1419; }
+      .label { font: 800 14px Outfit, Arial, sans-serif; fill: #536471; }
+      .tile { fill: #FFFFFF; stroke: #EFF3F4; stroke-width: 2; }
+      .icon { stroke: #0F1419; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+      .blue { stroke: #1A73E8; }
+      .green { stroke: #34A853; }
+      .pink { stroke: #E1306C; }
+      .fillPink { fill: #FDE7F0; }
+    </style>
+  </defs>
+  <rect width="1200" height="900" rx="42" fill="#F8F9FA"/>
+  <text x="56" y="72" class="title">Yorimo Icon System</text>
+  <text x="56" y="104" class="label">Custom SVG icons for Penpot. Social gradient + X-like line icons + Google Maps-style utility actions.</text>
+
+  <g transform="translate(56 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <circle cx="60" cy="60" r="42" fill="url(#ig)"/>
+    <path d="M36 71C44 45 60 79 72 53" stroke="white" stroke-width="9" stroke-linecap="round"/>
+    <text x="0" y="150" class="label">app mark</text>
+  </g>
+
+  <g transform="translate(216 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon blue" d="M31 84C45 46 68 88 89 38"/>
+    <circle cx="31" cy="84" r="8" fill="#1A73E8"/>
+    <circle cx="89" cy="38" r="8" fill="#1A73E8"/>
+    <text x="20" y="150" class="label">route</text>
+  </g>
+
+  <g transform="translate(376 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M30 88L44 34L76 48L90 32L78 86L46 72L30 88Z"/>
+    <path class="icon blue" d="M44 34L46 72"/>
+    <path class="icon pink" d="M76 48L78 86"/>
+    <text x="18" y="150" class="label">map</text>
+  </g>
+
+  <g transform="translate(536 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon pink" d="M60 28L69 50L93 51L74 66L80 90L60 76L40 90L46 66L27 51L51 50L60 28Z"/>
+    <text x="0" y="150" class="label">recommend</text>
+  </g>
+
+  <g transform="translate(696 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M60 32V88M32 60H88"/>
+    <text x="22" y="150" class="label">create</text>
+  </g>
+
+  <g transform="translate(856 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M38 30H82V91L60 76L38 91V30Z"/>
+    <text x="22" y="150" class="label">save</text>
+  </g>
+
+  <g transform="translate(1016 150)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <circle cx="60" cy="46" r="17" class="icon"/>
+    <path class="icon" d="M31 92C36 73 47 65 60 65C73 65 84 73 89 92"/>
+    <text x="22" y="150" class="label">profile</text>
+  </g>
+
+  <g transform="translate(56 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M30 39H90M39 60H81M48 81H72"/>
+    <text x="24" y="150" class="label">filter</text>
+  </g>
+
+  <g transform="translate(216 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <circle cx="54" cy="54" r="25" class="icon"/>
+    <path class="icon" d="M73 73L91 91"/>
+    <text x="22" y="150" class="label">search</text>
+  </g>
+
+  <g transform="translate(376 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon pink" d="M60 92C40 76 30 64 30 50C30 37 39 29 50 29C55 29 59 32 60 38C61 32 65 29 70 29C81 29 90 37 90 50C90 64 80 76 60 92Z"/>
+    <text x="26" y="150" class="label">like</text>
+  </g>
+
+  <g transform="translate(536 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <rect x="32" y="28" width="56" height="64" rx="16" fill="url(#ig)"/>
+    <path d="M54 48L74 60L54 72V48Z" fill="white"/>
+    <text x="32" y="150" class="label">reel</text>
+  </g>
+
+  <g transform="translate(696 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <rect x="34" y="24" width="52" height="72" rx="22" fill="#0F1419"/>
+    <path d="M47 42H73M47 78H67" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="75" cy="32" r="12" fill="url(#ig)"/>
+    <text x="24" y="150" class="label">story</text>
+  </g>
+
+  <g transform="translate(856 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon green" d="M30 62L50 82L92 38"/>
+    <text x="16" y="150" class="label">visited</text>
+  </g>
+
+  <g transform="translate(1016 350)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon pink" d="M60 32V66"/>
+    <circle cx="60" cy="86" r="3" fill="#E1306C"/>
+    <path class="icon pink" d="M41 96H79L60 24L41 96Z"/>
+    <text x="22" y="150" class="label">report</text>
+  </g>
+
+  <g transform="translate(56 550)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <circle cx="60" cy="60" r="32" class="icon pink"/>
+    <path class="icon pink" d="M38 82L82 38"/>
+    <text x="24" y="150" class="label">block</text>
+  </g>
+
+  <g transform="translate(216 550)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M32 38H88V82H45L32 94V38Z"/>
+    <text x="20" y="150" class="label">review</text>
+  </g>
+
+  <g transform="translate(376 550)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon blue" d="M60 94C75 72 89 56 89 42C89 27 77 18 60 18C43 18 31 27 31 42C31 56 45 72 60 94Z"/>
+    <circle cx="60" cy="43" r="11" fill="#1A73E8"/>
+    <text x="30" y="150" class="label">pin</text>
+  </g>
+
+  <g transform="translate(536 550)">
+    <rect class="tile" width="120" height="120" rx="28"/>
+    <path class="icon" d="M34 88H86M42 72H78M50 56H70"/>
+    <path class="icon blue" d="M60 30V48"/>
+    <text x="18" y="150" class="label">nearby</text>
+  </g>
+</svg>

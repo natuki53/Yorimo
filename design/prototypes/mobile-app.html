@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yorimo Mobile App Prototype</title>
+    <link rel="stylesheet" href="../system/tokens.css" />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600;700;800&display=swap");
+
+      body {
+        min-height: 100vh;
+      }
+
+      .board {
+        display: grid;
+        gap: 28px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 390px));
+        justify-content: center;
+        padding: 32px;
+      }
+
+      .frame-label {
+        color: var(--color-muted);
+        font-family: var(--font-display);
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0;
+        margin: 0 0 10px;
+      }
+
+      .phone {
+        background: #0f172a;
+        border-radius: 38px;
+        box-shadow: 0 28px 70px rgb(15 23 42 / 22%);
+        padding: 10px;
+      }
+
+      .screen {
+        background: var(--color-canvas);
+        border-radius: 30px;
+        height: 844px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .status {
+        align-items: center;
+        color: var(--color-text);
+        display: flex;
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 700;
+        height: 32px;
+        justify-content: space-between;
+        left: 0;
+        padding: 0 24px;
+        position: absolute;
+        right: 0;
+        top: 0;
+        z-index: 5;
+      }
+
+      .signal {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+      }
+
+      .signal i {
+        background: var(--color-text);
+        border-radius: 999px;
+        display: block;
+        height: 6px;
+        width: 6px;
+      }
+
+      .map {
+        background:
+          linear-gradient(90deg, rgb(232 234 237 / 72%) 1px, transparent 1px),
+          linear-gradient(0deg, rgb(232 234 237 / 68%) 1px, transparent 1px),
+          var(--color-canvas);
+        background-size: 56px 56px;
+        inset: 0;
+        position: absolute;
+      }
+
+      .map::before,
+      .map::after {
+        background: var(--color-map-road);
+        border-radius: 999px;
+        box-shadow: 0 0 0 1px rgb(232 234 237 / 78%);
+        content: "";
+        display: block;
+        height: 9px;
+        position: absolute;
+        transform: rotate(-24deg);
+        width: 520px;
+      }
+
+      .map::before {
+        left: -70px;
+        top: 214px;
+      }
+
+      .map::after {
+        left: 14px;
+        top: 510px;
+        transform: rotate(18deg);
+      }
+
+      .route-line {
+        border: 5px solid var(--color-route);
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 0 90px 0 0;
+        height: 270px;
+        left: 86px;
+        position: absolute;
+        top: 170px;
+        transform: rotate(8deg);
+        width: 210px;
+      }
+
+      .marker {
+        align-items: center;
+        border: 3px solid white;
+        border-radius: 999px;
+        box-shadow: 0 8px 22px rgb(15 23 42 / 24%);
+        color: white;
+        display: flex;
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 800;
+        height: 34px;
+        justify-content: center;
+        position: absolute;
+        width: 34px;
+      }
+
+      .marker.current {
+        background: var(--color-route);
+        left: 94px;
+        top: 368px;
+      }
+
+      .marker.top {
+        background: var(--color-brand);
+        left: 246px;
+        top: 252px;
+      }
+
+      .marker.saved {
+        background: var(--color-success);
+        left: 188px;
+        top: 448px;
+      }
+
+      .map-header {
+        align-items: center;
+        background: rgb(255 255 255 / 94%);
+        border: 1px solid var(--color-border);
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgb(15 23 42 / 12%);
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 44px 1fr 44px;
+        left: 16px;
+        min-height: 58px;
+        padding: 7px;
+        position: absolute;
+        right: 16px;
+        top: 46px;
+        z-index: 4;
+      }
+
+      .route-icon,
+      .filter-icon {
+        align-items: center;
+        background: var(--color-route-soft);
+        border-radius: 12px;
+        color: var(--color-route);
+        display: flex;
+        height: 44px;
+        justify-content: center;
+        width: 44px;
+      }
+
+      .filter-icon {
+        background: var(--color-brand-soft);
+        color: var(--color-brand);
+      }
+
+      .search-title {
+        color: var(--color-text);
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .search-subtitle {
+        color: var(--color-subtle);
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .chips {
+        display: flex;
+        gap: 8px;
+        left: 16px;
+        overflow: hidden;
+        position: absolute;
+        right: 16px;
+        top: 118px;
+        z-index: 4;
+      }
+
+      .sheet {
+        background: var(--color-surface);
+        border-radius: 24px 24px 0 0;
+        bottom: 64px;
+        box-shadow: var(--shadow-sheet);
+        left: 0;
+        padding: 10px 16px 18px;
+        position: absolute;
+        right: 0;
+        z-index: 3;
+      }
+
+      .handle {
+        background: #cbd5e1;
+        border-radius: 999px;
+        height: 5px;
+        margin: 0 auto 12px;
+        width: 48px;
+      }
+
+      .sheet-head {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .eyebrow {
+        color: var(--color-brand);
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .title {
+        color: var(--color-text);
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .score {
+        align-items: center;
+        background: var(--color-brand);
+        border-radius: 16px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--font-display);
+        height: 58px;
+        justify-content: center;
+        width: 58px;
+      }
+
+      .score strong {
+        font-size: 23px;
+        line-height: 1;
+      }
+
+      .score span {
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .spot-row {
+        align-items: center;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 64px 1fr;
+      }
+
+      .thumb {
+        background:
+          linear-gradient(135deg, rgb(2 132 199 / 70%), rgb(225 29 72 / 74%)),
+          #e2e8f0;
+        border-radius: 16px;
+        height: 64px;
+        position: relative;
+      }
+
+      .thumb::after {
+        background: rgb(255 255 255 / 72%);
+        border-radius: 999px;
+        bottom: 10px;
+        content: "";
+        height: 9px;
+        left: 12px;
+        position: absolute;
+        width: 36px;
+      }
+
+      .spot-name {
+        color: var(--color-text);
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .meta {
+        color: var(--color-subtle);
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .reason-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0;
+      }
+
+      .reason {
+        background: #f1f5f9;
+        border-radius: 999px;
+        color: var(--color-muted);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 7px 10px;
+      }
+
+      .actions {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr 44px 44px;
+      }
+
+      .bottom-nav {
+        align-items: center;
+        background: rgb(255 255 255 / 96%);
+        border-top: 1px solid var(--color-border);
+        bottom: 0;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        height: 64px;
+        left: 0;
+        position: absolute;
+        right: 0;
+        z-index: 5;
+      }
+
+      .nav-item {
+        align-items: center;
+        color: var(--color-subtle);
+        display: flex;
+        flex-direction: column;
+        font-size: 11px;
+        font-weight: 800;
+        gap: 4px;
+      }
+
+      .nav-dot {
+        border: 2px solid currentColor;
+        border-radius: 8px;
+        height: 18px;
+        width: 18px;
+      }
+
+      .nav-item.active {
+        color: var(--color-brand);
+      }
+
+      .page {
+        padding: 48px 16px 82px;
+      }
+
+      .page-header {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .list-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 20px;
+        box-shadow: var(--shadow-card);
+        padding: 14px;
+      }
+
+      .rank-line {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+      }
+
+      .rank {
+        align-items: center;
+        background: var(--color-route-soft);
+        border-radius: 12px;
+        color: var(--color-route);
+        display: flex;
+        font-family: var(--font-display);
+        font-weight: 800;
+        height: 34px;
+        justify-content: center;
+        width: 34px;
+      }
+
+      .meter {
+        background: #e2e8f0;
+        border-radius: 999px;
+        height: 7px;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .meter span {
+        background: var(--color-brand);
+        display: block;
+        height: 100%;
+      }
+
+      .detail-hero {
+        background:
+          linear-gradient(135deg, rgb(2 132 199 / 72%), rgb(22 163 74 / 60%)),
+          #cbd5e1;
+        border-radius: 0 0 28px 28px;
+        height: 260px;
+        margin: -48px -16px 18px;
+        padding: 48px 16px 16px;
+        position: relative;
+      }
+
+      .hero-control {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .back,
+      .overflow {
+        background: rgb(255 255 255 / 88%);
+        border-radius: 14px;
+        height: 44px;
+        width: 44px;
+      }
+
+      .hero-card {
+        background: rgb(255 255 255 / 92%);
+        border-radius: 20px;
+        bottom: 16px;
+        left: 16px;
+        padding: 14px;
+        position: absolute;
+        right: 16px;
+      }
+
+      .info-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .info-cell {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .cell-label {
+        color: var(--color-subtle);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .cell-value {
+        color: var(--color-text);
+        font-family: var(--font-display);
+        font-size: 17px;
+        font-weight: 800;
+        margin-top: 4px;
+      }
+
+      .post-preview {
+        align-items: center;
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 18px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 48px 1fr;
+        margin-top: 12px;
+        padding: 12px;
+      }
+
+      .avatar {
+        background: var(--color-brand-soft);
+        border-radius: 999px;
+        height: 48px;
+        width: 48px;
+      }
+
+      .form {
+        display: grid;
+        gap: 12px;
+      }
+
+      .field {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 18px;
+        padding: 12px;
+      }
+
+      .field label {
+        color: var(--color-subtle);
+        display: block;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+
+      .input-like {
+        color: var(--color-text);
+        font-size: 16px;
+        font-weight: 700;
+        min-height: 24px;
+      }
+
+      .segmented {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .segment {
+        background: #f1f5f9;
+        border-radius: 12px;
+        color: var(--color-muted);
+        font-size: 12px;
+        font-weight: 800;
+        min-height: 42px;
+        padding-top: 12px;
+        text-align: center;
+      }
+
+      .segment.active {
+        background: var(--color-brand-soft);
+        color: var(--color-brand);
+      }
+
+      @media (max-width: 760px) {
+        .board {
+          padding: 18px 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section>
+        <p class="frame-label">Home Map</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="map"></div>
+            <div class="route-line"></div>
+            <div class="marker current">現在</div>
+            <div class="marker top">92</div>
+            <div class="marker saved">済</div>
+            <div class="status"><span>19:42</span><span class="signal"><i></i><i></i><i></i></span></div>
+
+            <div class="map-header">
+              <div class="route-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 19c4-9 10 1 14-8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                  <circle cx="5" cy="19" r="2" fill="currentColor" />
+                  <circle cx="19" cy="11" r="2" fill="currentColor" />
+                </svg>
+              </div>
+              <div>
+                <div class="search-title">学校帰りに寄り道</div>
+                <div class="search-subtitle">新宿駅まで / 45分 / 1500円以内</div>
+              </div>
+              <div class="filter-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="chips">
+              <span class="app-chip" data-active="true">甘いもの</span>
+              <span class="app-chip">静か</span>
+              <span class="app-chip">駅近</span>
+              <span class="app-chip">保存済み</span>
+            </div>
+
+            <div class="sheet">
+              <div class="handle"></div>
+              <div class="sheet-head">
+                <div>
+                  <div class="eyebrow">いま一番ちょうどいい</div>
+                  <div class="title">寄り道候補</div>
+                </div>
+                <div class="score"><strong>92</strong><span>fit</span></div>
+              </div>
+              <div class="spot-row">
+                <div class="thumb"></div>
+                <div>
+                  <div class="spot-name">mado cafe</div>
+                  <div class="meta">徒歩8分 / 35分滞在 / 900円目安</div>
+                </div>
+              </div>
+              <div class="reason-row">
+                <span class="reason">ルートから近い</span>
+                <span class="reason">気分に合う</span>
+                <span class="reason">予算内</span>
+              </div>
+              <div class="actions">
+                <button class="primary-action">ここに寄る</button>
+                <button class="icon-button" aria-label="保存">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 4h12v16l-6-4-6 4V4Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <button class="icon-button" aria-label="スキップ">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <nav class="bottom-nav">
+              <div class="nav-item active"><span class="nav-dot"></span><span>地図</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>おすすめ</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>投稿</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>保存</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>自分</span></div>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="frame-label">Recommendations</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>19:42</span><span class="signal"><i></i><i></i><i></i></span></div>
+            <div class="page">
+              <div class="page-header">
+                <div>
+                  <div class="eyebrow">45分で行ける</div>
+                  <div class="title">おすすめ</div>
+                </div>
+                <button class="icon-button" aria-label="フィルター">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+              <div class="reason-row">
+                <span class="app-chip" data-active="true">甘いもの</span>
+                <span class="app-chip">1500円以内</span>
+                <span class="app-chip">新宿まで</span>
+              </div>
+              <div class="list">
+                <article class="list-card">
+                  <div class="rank-line">
+                    <div class="rank">1</div>
+                    <div style="flex: 1">
+                      <div class="spot-name">mado cafe</div>
+                      <div class="meta">徒歩8分 / 35分 / 900円</div>
+                    </div>
+                    <div class="score"><strong>92</strong><span>fit</span></div>
+                  </div>
+                  <div class="reason-row">
+                    <span class="reason">現在地から近い</span>
+                    <span class="reason">スイーツ投稿が多い</span>
+                  </div>
+                  <div class="meter"><span style="width: 92%"></span></div>
+                </article>
+                <article class="list-card">
+                  <div class="rank-line">
+                    <div class="rank">2</div>
+                    <div style="flex: 1">
+                      <div class="spot-name">paper park</div>
+                      <div class="meta">徒歩12分 / 40分 / 1200円</div>
+                    </div>
+                    <div class="score" style="background: var(--color-route)"><strong>84</strong><span>fit</span></div>
+                  </div>
+                  <div class="reason-row">
+                    <span class="reason">静かな場所</span>
+                    <span class="reason">保存履歴と近い</span>
+                  </div>
+                  <div class="meter"><span style="width: 84%; background: var(--color-route)"></span></div>
+                </article>
+                <article class="list-card">
+                  <div class="rank-line">
+                    <div class="rank">3</div>
+                    <div style="flex: 1">
+                      <div class="spot-name">north sauna</div>
+                      <div class="meta">電車1駅 / 60分 / 1500円</div>
+                    </div>
+                    <div class="score" style="background: var(--color-success)"><strong>78</strong><span>fit</span></div>
+                  </div>
+                  <div class="reason-row">
+                    <span class="reason">気分タグ一致</span>
+                    <span class="reason">予算ぎりぎり</span>
+                  </div>
+                  <div class="meter"><span style="width: 78%; background: var(--color-success)"></span></div>
+                </article>
+              </div>
+            </div>
+            <nav class="bottom-nav">
+              <div class="nav-item"><span class="nav-dot"></span><span>地図</span></div>
+              <div class="nav-item active"><span class="nav-dot"></span><span>おすすめ</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>投稿</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>保存</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>自分</span></div>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="frame-label">Spot Detail</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>19:42</span><span class="signal"><i></i><i></i><i></i></span></div>
+            <div class="page">
+              <div class="detail-hero">
+                <div class="hero-control">
+                  <div class="back"></div>
+                  <div class="overflow"></div>
+                </div>
+                <div class="hero-card">
+                  <div class="eyebrow">カフェ / 新宿三丁目</div>
+                  <div class="title">mado cafe</div>
+                  <div class="meta">帰り道にちょうどいい、窓際の小さなカフェ</div>
+                </div>
+              </div>
+              <div class="info-grid">
+                <div class="info-cell">
+                  <div class="cell-label">滞在目安</div>
+                  <div class="cell-value">35分</div>
+                </div>
+                <div class="info-cell">
+                  <div class="cell-label">予算</div>
+                  <div class="cell-value">900円</div>
+                </div>
+                <div class="info-cell">
+                  <div class="cell-label">ルート適合</div>
+                  <div class="cell-value">92</div>
+                </div>
+                <div class="info-cell">
+                  <div class="cell-label">混雑感</div>
+                  <div class="cell-value">ふつう</div>
+                </div>
+              </div>
+              <div class="reason-row">
+                <button class="primary-action">保存する</button>
+                <button class="icon-button" aria-label="訪問済み">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <button class="icon-button" aria-label="通報">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 8v5M12 17h.01M10.2 4h3.6L21 19H3L10.2 4Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+              <div class="post-preview">
+                <div class="avatar"></div>
+                <div>
+                  <div class="spot-name" style="font-size: 15px">帰り道にちょうどよかった</div>
+                  <div class="meta">5分前 / public / 甘いもの</div>
+                </div>
+              </div>
+              <div class="post-preview">
+                <div class="avatar" style="background: var(--color-route-soft)"></div>
+                <div>
+                  <div class="spot-name" style="font-size: 15px">席が空いていて作業しやすい</div>
+                  <div class="meta">昨日 / review / 静かな場所</div>
+                </div>
+              </div>
+            </div>
+            <nav class="bottom-nav">
+              <div class="nav-item active"><span class="nav-dot"></span><span>地図</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>おすすめ</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>投稿</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>保存</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>自分</span></div>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="frame-label">Create Post</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>19:42</span><span class="signal"><i></i><i></i><i></i></span></div>
+            <div class="page">
+              <div class="page-header">
+                <div>
+                  <div class="eyebrow">スポットに投稿</div>
+                  <div class="title">記録する</div>
+                </div>
+                <button class="icon-button" aria-label="閉じる">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+              <div class="form">
+                <div class="field">
+                  <label>スポット</label>
+                  <div class="input-like">mado cafe</div>
+                </div>
+                <div class="field">
+                  <label>投稿タイプ</label>
+                  <div class="segmented">
+                    <div class="segment active">写真</div>
+                    <div class="segment">動画</div>
+                    <div class="segment">ストーリー</div>
+                    <div class="segment">レビュー</div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>メディアURL</label>
+                  <div class="input-like" style="color: var(--color-subtle)">https://...</div>
+                </div>
+                <div class="field">
+                  <label>ひとこと</label>
+                  <div class="input-like">帰り道にちょうどよかった</div>
+                </div>
+                <div class="field">
+                  <label>評価</label>
+                  <div class="input-like">5 / 5</div>
+                </div>
+                <div class="field">
+                  <label>気分タグ</label>
+                  <div class="reason-row" style="margin: 0">
+                    <span class="app-chip" data-active="true">甘いもの</span>
+                    <span class="app-chip" data-active="true">静か</span>
+                    <span class="app-chip">駅近</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>公開範囲</label>
+                  <div class="segmented" style="grid-template-columns: repeat(3, 1fr)">
+                    <div class="segment active">public</div>
+                    <div class="segment">private</div>
+                    <div class="segment">followers<br />準備中</div>
+                  </div>
+                </div>
+                <button class="primary-action" style="width: 100%">投稿する</button>
+              </div>
+            </div>
+            <nav class="bottom-nav">
+              <div class="nav-item"><span class="nav-dot"></span><span>地図</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>おすすめ</span></div>
+              <div class="nav-item active"><span class="nav-dot"></span><span>投稿</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>保存</span></div>
+              <div class="nav-item"><span class="nav-dot"></span><span>自分</span></div>
+            </nav>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

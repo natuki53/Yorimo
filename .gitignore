@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.agents/
+design-system/yorimo/
 .env
 .env.*
 !.env.example

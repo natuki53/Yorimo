@@ -1,0 +1,292 @@
+<svg width="1800" height="1100" viewBox="0 0 1800 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="phoneShadow" x="-40%" y="-20%" width="180%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#833AB4"/>
+      <stop offset="1" stop-color="#E1306C"/>
+    </linearGradient>
+    <linearGradient id="thumbGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#833AB4"/>
+      <stop offset="1" stop-color="#F77737"/>
+    </linearGradient>
+    <pattern id="mapGrid" width="54" height="54" patternUnits="userSpaceOnUse">
+      <path d="M54 0H0V54" stroke="#E8EAED" stroke-width="1"/>
+    </pattern>
+    <style>
+      .label { font: 700 18px Lexend, Arial, sans-serif; fill: #334155; }
+      .eyebrow { font: 800 13px Lexend, Arial, sans-serif; fill: #E1306C; }
+      .title { font: 800 24px Lexend, Arial, sans-serif; fill: #020617; }
+      .h2 { font: 800 18px Lexend, Arial, sans-serif; fill: #020617; }
+      .body { font: 700 14px "Source Sans 3", Arial, sans-serif; fill: #334155; }
+      .muted { font: 700 13px "Source Sans 3", Arial, sans-serif; fill: #64748B; }
+      .small { font: 800 11px "Source Sans 3", Arial, sans-serif; fill: #64748B; }
+      .whiteText { font: 800 13px Lexend, Arial, sans-serif; fill: white; }
+      .nav { font: 800 11px "Source Sans 3", Arial, sans-serif; fill: #64748B; }
+      .navActive { font: 800 11px "Source Sans 3", Arial, sans-serif; fill: #E1306C; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1100" fill="#F8FAFC"/>
+  <text x="80" y="62" font-family="Lexend, Arial, sans-serif" font-size="34" font-weight="800" fill="#020617">Yorimo Penpot Redesign</text>
+  <text x="80" y="94" font-family="Source Sans 3, Arial, sans-serif" font-size="16" font-weight="700" fill="#64748B">Mobile-first detour mapping SNS: map utility, social proof, safety-aware posting.</text>
+
+  <g transform="translate(80 130)">
+    <text class="label" x="0" y="-18">Home Map</text>
+    <rect width="390" height="844" rx="38" fill="#0F172A" filter="url(#phoneShadow)"/>
+    <rect x="10" y="10" width="370" height="824" rx="30" fill="#F8FAFC"/>
+    <rect x="10" y="10" width="370" height="824" rx="30" fill="url(#mapGrid)"/>
+    <path d="M-14 230 C90 170 150 300 286 206 C350 162 400 180 440 142" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+    <path d="M28 548 C110 474 178 596 260 518 C316 466 354 474 426 424" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+    <path d="M105 430 C146 320 230 374 265 276" stroke="#1A73E8" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="105" cy="430" r="18" fill="#1A73E8" stroke="white" stroke-width="4"/>
+    <circle cx="265" cy="276" r="18" fill="#E1306C" stroke="white" stroke-width="4"/>
+    <text x="255" y="281" class="whiteText">92</text>
+    <circle cx="204" cy="494" r="18" fill="#34A853" stroke="white" stroke-width="4"/>
+    <text x="195" y="499" class="whiteText">済</text>
+    <text x="32" y="32" font-family="Lexend, Arial, sans-serif" font-size="12" font-weight="800" fill="#020617">19:42</text>
+
+    <rect x="26" y="46" width="338" height="58" rx="18" fill="white" stroke="#E2E8F0" filter="url(#cardShadow)"/>
+    <rect x="34" y="53" width="44" height="44" rx="12" fill="#E0F2FE"/>
+    <path d="M45 84 C54 62 67 89 73 66" stroke="#1A73E8" stroke-width="3" stroke-linecap="round"/>
+    <text x="90" y="72" class="h2">学校帰りに寄り道</text>
+    <text x="90" y="91" class="muted">新宿駅まで / 45分 / 1500円以内</text>
+    <rect x="312" y="53" width="44" height="44" rx="12" fill="#FFE4E6"/>
+    <path d="M322 66H346M326 75H342M330 84H338" stroke="#E1306C" stroke-width="3" stroke-linecap="round"/>
+
+    <rect x="26" y="118" width="76" height="34" rx="17" fill="#FFE4E6" stroke="#FECDD3"/>
+    <text x="43" y="140" class="small" fill="#9F1239">甘いもの</text>
+    <rect x="110" y="118" width="58" height="34" rx="17" fill="white" stroke="#E2E8F0"/>
+    <text x="126" y="140" class="small">静か</text>
+    <rect x="176" y="118" width="62" height="34" rx="17" fill="white" stroke="#E2E8F0"/>
+    <text x="191" y="140" class="small">駅近</text>
+
+    <rect x="10" y="518" width="370" height="252" rx="24" fill="white" filter="url(#cardShadow)"/>
+    <rect x="171" y="531" width="48" height="5" rx="3" fill="#CBD5E1"/>
+    <text x="26" y="566" class="eyebrow">いま一番ちょうどいい</text>
+    <text x="26" y="596" class="title">寄り道候補</text>
+    <rect x="306" y="552" width="58" height="58" rx="16" fill="#E1306C"/>
+    <text x="320" y="579" font-family="Lexend, Arial, sans-serif" font-size="23" font-weight="800" fill="white">92</text>
+    <text x="322" y="595" font-family="Lexend, Arial, sans-serif" font-size="10" font-weight="800" fill="white">fit</text>
+    <rect x="26" y="622" width="64" height="64" rx="16" fill="url(#thumbGradient)"/>
+    <rect x="38" y="670" width="36" height="8" rx="4" fill="white" opacity=".75"/>
+    <text x="104" y="647" class="h2">mado cafe</text>
+    <text x="104" y="668" class="muted">徒歩8分 / 35分滞在 / 900円目安</text>
+    <rect x="26" y="704" width="104" height="28" rx="14" fill="#F1F5F9"/>
+    <text x="39" y="723" class="small">ルートから近い</text>
+    <rect x="138" y="704" width="88" height="28" rx="14" fill="#F1F5F9"/>
+    <text x="151" y="723" class="small">気分に合う</text>
+    <rect x="26" y="722" width="224" height="44" rx="12" fill="url(#thumbGradient)"/>
+    <text x="100" y="750" class="whiteText">ここに寄る</text>
+    <rect x="262" y="722" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M273 738H291V764L282 758L273 764V738Z" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="320" y="722" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M330 740L348 758M348 740L330 758" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+
+    <rect x="10" y="770" width="370" height="64" fill="white" stroke="#E2E8F0"/>
+    <text x="44" y="812" class="navActive">地図</text>
+    <text x="112" y="812" class="nav">おすすめ</text>
+    <text x="204" y="812" class="nav">投稿</text>
+    <text x="270" y="812" class="nav">保存</text>
+    <text x="330" y="812" class="nav">自分</text>
+  </g>
+
+  <g transform="translate(500 130)">
+    <text class="label" x="0" y="-18">Recommendations</text>
+    <rect width="390" height="844" rx="38" fill="#0F172A" filter="url(#phoneShadow)"/>
+    <rect x="10" y="10" width="370" height="824" rx="30" fill="#F8FAFC"/>
+    <text x="32" y="32" font-family="Lexend, Arial, sans-serif" font-size="12" font-weight="800" fill="#020617">19:42</text>
+    <text x="26" y="78" class="eyebrow">45分で行ける</text>
+    <text x="26" y="110" class="title">おすすめ</text>
+    <rect x="318" y="66" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M329 79H352M333 88H348M337 97H344" stroke="#334155" stroke-width="2.6" stroke-linecap="round"/>
+    <rect x="26" y="132" width="76" height="34" rx="17" fill="#FFE4E6" stroke="#FECDD3"/>
+    <text x="43" y="154" class="small" fill="#9F1239">甘いもの</text>
+    <rect x="110" y="132" width="92" height="34" rx="17" fill="white" stroke="#E2E8F0"/>
+    <text x="126" y="154" class="small">1500円以内</text>
+    <rect x="210" y="132" width="78" height="34" rx="17" fill="white" stroke="#E2E8F0"/>
+    <text x="225" y="154" class="small">新宿まで</text>
+
+    <g transform="translate(26 188)">
+      <rect width="338" height="150" rx="20" fill="white" stroke="#E2E8F0" filter="url(#cardShadow)"/>
+      <rect x="14" y="14" width="34" height="34" rx="12" fill="#E0F2FE"/>
+      <text x="26" y="37" class="body" fill="#1A73E8">1</text>
+      <text x="62" y="31" class="h2">mado cafe</text>
+      <text x="62" y="52" class="muted">徒歩8分 / 35分 / 900円</text>
+      <rect x="266" y="14" width="58" height="58" rx="16" fill="#E1306C"/>
+      <text x="280" y="41" font-family="Lexend, Arial, sans-serif" font-size="23" font-weight="800" fill="white">92</text>
+      <text x="282" y="57" font-family="Lexend, Arial, sans-serif" font-size="10" font-weight="800" fill="white">fit</text>
+      <rect x="14" y="86" width="106" height="28" rx="14" fill="#F1F5F9"/>
+      <text x="27" y="105" class="small">現在地から近い</text>
+      <rect x="128" y="86" width="118" height="28" rx="14" fill="#F1F5F9"/>
+      <text x="141" y="105" class="small">スイーツ投稿が多い</text>
+      <rect x="14" y="126" width="310" height="7" rx="4" fill="#E2E8F0"/>
+      <rect x="14" y="126" width="285" height="7" rx="4" fill="#E1306C"/>
+    </g>
+
+    <g transform="translate(26 354)">
+      <rect width="338" height="150" rx="20" fill="white" stroke="#E2E8F0" filter="url(#cardShadow)"/>
+      <rect x="14" y="14" width="34" height="34" rx="12" fill="#E0F2FE"/>
+      <text x="26" y="37" class="body" fill="#1A73E8">2</text>
+      <text x="62" y="31" class="h2">paper park</text>
+      <text x="62" y="52" class="muted">徒歩12分 / 40分 / 1200円</text>
+      <rect x="266" y="14" width="58" height="58" rx="16" fill="#1A73E8"/>
+      <text x="280" y="41" font-family="Lexend, Arial, sans-serif" font-size="23" font-weight="800" fill="white">84</text>
+      <text x="282" y="57" font-family="Lexend, Arial, sans-serif" font-size="10" font-weight="800" fill="white">fit</text>
+      <rect x="14" y="86" width="82" height="28" rx="14" fill="#F1F5F9"/>
+      <text x="27" y="105" class="small">静かな場所</text>
+      <rect x="104" y="86" width="112" height="28" rx="14" fill="#F1F5F9"/>
+      <text x="117" y="105" class="small">保存履歴と近い</text>
+      <rect x="14" y="126" width="310" height="7" rx="4" fill="#E2E8F0"/>
+      <rect x="14" y="126" width="260" height="7" rx="4" fill="#1A73E8"/>
+    </g>
+
+    <g transform="translate(26 520)">
+      <rect width="338" height="142" rx="20" fill="white" stroke="#E2E8F0"/>
+      <rect x="14" y="14" width="34" height="34" rx="12" fill="#E0F2FE"/>
+      <text x="26" y="37" class="body" fill="#1A73E8">3</text>
+      <text x="62" y="31" class="h2">north sauna</text>
+      <text x="62" y="52" class="muted">電車1駅 / 60分 / 1500円</text>
+      <rect x="266" y="14" width="58" height="58" rx="16" fill="#34A853"/>
+      <text x="280" y="41" font-family="Lexend, Arial, sans-serif" font-size="23" font-weight="800" fill="white">78</text>
+      <text x="282" y="57" font-family="Lexend, Arial, sans-serif" font-size="10" font-weight="800" fill="white">fit</text>
+      <rect x="14" y="86" width="88" height="28" rx="14" fill="#F1F5F9"/>
+      <text x="27" y="105" class="small">気分タグ一致</text>
+      <rect x="110" y="86" width="82" height="28" rx="14" fill="#FEF3C7"/>
+      <text x="123" y="105" class="small" fill="#92400E">予算ぎりぎり</text>
+    </g>
+    <rect x="10" y="770" width="370" height="64" fill="white" stroke="#E2E8F0"/>
+    <text x="44" y="812" class="nav">地図</text>
+    <text x="112" y="812" class="navActive">おすすめ</text>
+    <text x="204" y="812" class="nav">投稿</text>
+    <text x="270" y="812" class="nav">保存</text>
+    <text x="330" y="812" class="nav">自分</text>
+  </g>
+
+  <g transform="translate(920 130)">
+    <text class="label" x="0" y="-18">Spot Detail</text>
+    <rect width="390" height="844" rx="38" fill="#0F172A" filter="url(#phoneShadow)"/>
+    <rect x="10" y="10" width="370" height="824" rx="30" fill="#F8FAFC"/>
+    <rect x="10" y="10" width="370" height="260" rx="30" fill="url(#heroGradient)"/>
+    <rect x="26" y="54" width="44" height="44" rx="14" fill="white" opacity=".9"/>
+    <path d="M52 65L41 76L52 87" stroke="#334155" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="320" y="54" width="44" height="44" rx="14" fill="white" opacity=".9"/>
+    <circle cx="336" cy="76" r="2.4" fill="#334155"/><circle cx="342" cy="76" r="2.4" fill="#334155"/><circle cx="348" cy="76" r="2.4" fill="#334155"/>
+    <rect x="26" y="164" width="338" height="84" rx="20" fill="white" opacity=".94"/>
+    <text x="42" y="192" class="eyebrow">カフェ / 新宿三丁目</text>
+    <text x="42" y="223" class="title">mado cafe</text>
+    <text x="42" y="240" class="muted">帰り道にちょうどいい、窓際の小さなカフェ</text>
+
+    <g transform="translate(26 292)">
+      <rect width="158" height="74" rx="16" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="26" class="small">滞在目安</text>
+      <text x="14" y="54" class="h2">35分</text>
+      <rect x="180" width="158" height="74" rx="16" fill="white" stroke="#E2E8F0"/>
+      <text x="194" y="26" class="small">予算</text>
+      <text x="194" y="54" class="h2">900円</text>
+      <rect y="86" width="158" height="74" rx="16" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="112" class="small">ルート適合</text>
+      <text x="14" y="140" class="h2">92</text>
+      <rect x="180" y="86" width="158" height="74" rx="16" fill="white" stroke="#E2E8F0"/>
+      <text x="194" y="112" class="small">混雑感</text>
+      <text x="194" y="140" class="h2">ふつう</text>
+    </g>
+
+    <rect x="26" y="476" width="224" height="44" rx="12" fill="url(#thumbGradient)"/>
+    <text x="104" y="504" class="whiteText">保存する</text>
+    <rect x="262" y="476" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M274 498L282 506L296 486" stroke="#334155" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="320" y="476" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M342 486V501M342 508H342.2M334 514H350L342 482L334 514Z" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+
+    <g transform="translate(26 542)">
+      <rect width="338" height="72" rx="18" fill="white" stroke="#E2E8F0"/>
+      <circle cx="36" cy="36" r="24" fill="#FFE4E6"/>
+      <text x="72" y="32" class="h2" font-size="15">帰り道にちょうどよかった</text>
+      <text x="72" y="53" class="muted">5分前 / public / 甘いもの</text>
+    </g>
+    <g transform="translate(26 626)">
+      <rect width="338" height="72" rx="18" fill="white" stroke="#E2E8F0"/>
+      <circle cx="36" cy="36" r="24" fill="#E0F2FE"/>
+      <text x="72" y="32" class="h2" font-size="15">席が空いていて作業しやすい</text>
+      <text x="72" y="53" class="muted">昨日 / review / 静かな場所</text>
+    </g>
+    <rect x="10" y="770" width="370" height="64" fill="white" stroke="#E2E8F0"/>
+    <text x="44" y="812" class="navActive">地図</text>
+    <text x="112" y="812" class="nav">おすすめ</text>
+    <text x="204" y="812" class="nav">投稿</text>
+    <text x="270" y="812" class="nav">保存</text>
+    <text x="330" y="812" class="nav">自分</text>
+  </g>
+
+  <g transform="translate(1340 130)">
+    <text class="label" x="0" y="-18">Create Post</text>
+    <rect width="390" height="844" rx="38" fill="#0F172A" filter="url(#phoneShadow)"/>
+    <rect x="10" y="10" width="370" height="824" rx="30" fill="#F8FAFC"/>
+    <text x="32" y="32" font-family="Lexend, Arial, sans-serif" font-size="12" font-weight="800" fill="#020617">19:42</text>
+    <text x="26" y="78" class="eyebrow">スポットに投稿</text>
+    <text x="26" y="110" class="title">記録する</text>
+    <rect x="320" y="66" width="44" height="44" rx="12" fill="white" stroke="#E2E8F0"/>
+    <path d="M331 77L353 99M353 77L331 99" stroke="#334155" stroke-width="2.3" stroke-linecap="round"/>
+
+    <g transform="translate(26 136)">
+      <rect width="338" height="58" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="24" class="small">スポット</text>
+      <text x="14" y="46" class="body" fill="#020617">mado cafe</text>
+
+      <rect y="72" width="338" height="96" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="96" class="small">投稿タイプ</text>
+      <rect x="14" y="112" width="72" height="42" rx="12" fill="#FFE4E6"/>
+      <text x="38" y="138" class="small" fill="#9F1239">写真</text>
+      <rect x="94" y="112" width="72" height="42" rx="12" fill="#F1F5F9"/>
+      <text x="118" y="138" class="small">動画</text>
+      <rect x="174" y="112" width="72" height="42" rx="12" fill="#F1F5F9"/>
+      <text x="188" y="138" class="small">ストーリー</text>
+      <rect x="254" y="112" width="70" height="42" rx="12" fill="#F1F5F9"/>
+      <text x="270" y="138" class="small">レビュー</text>
+
+      <rect y="182" width="338" height="58" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="206" class="small">メディアURL</text>
+      <text x="14" y="228" class="muted">https://...</text>
+
+      <rect y="254" width="338" height="80" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="278" class="small">ひとこと</text>
+      <text x="14" y="302" class="body" fill="#020617">帰り道にちょうどよかった</text>
+
+      <rect y="348" width="338" height="58" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="372" class="small">評価</text>
+      <text x="14" y="394" class="body" fill="#020617">5 / 5</text>
+
+      <rect y="420" width="338" height="76" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="444" class="small">気分タグ</text>
+      <rect x="14" y="456" width="76" height="30" rx="15" fill="#FFE4E6" stroke="#FECDD3"/>
+      <text x="31" y="476" class="small" fill="#9F1239">甘いもの</text>
+      <rect x="98" y="456" width="58" height="30" rx="15" fill="#FFE4E6" stroke="#FECDD3"/>
+      <text x="114" y="476" class="small" fill="#9F1239">静か</text>
+      <rect x="164" y="456" width="62" height="30" rx="15" fill="white" stroke="#E2E8F0"/>
+      <text x="179" y="476" class="small">駅近</text>
+
+      <rect y="510" width="338" height="82" rx="18" fill="white" stroke="#E2E8F0"/>
+      <text x="14" y="534" class="small">公開範囲</text>
+      <rect x="14" y="548" width="96" height="34" rx="12" fill="#FFE4E6"/>
+      <text x="44" y="570" class="small" fill="#9F1239">public</text>
+      <rect x="118" y="548" width="96" height="34" rx="12" fill="#F1F5F9"/>
+      <text x="150" y="570" class="small">private</text>
+      <rect x="222" y="548" width="102" height="34" rx="12" fill="#F1F5F9"/>
+      <text x="239" y="570" class="small">followers 準備中</text>
+
+    <rect y="610" width="338" height="48" rx="14" fill="url(#thumbGradient)"/>
+      <text x="142" y="640" class="whiteText">投稿する</text>
+    </g>
+    <rect x="10" y="770" width="370" height="64" fill="white" stroke="#E2E8F0"/>
+    <text x="44" y="812" class="nav">地図</text>
+    <text x="112" y="812" class="nav">おすすめ</text>
+    <text x="204" y="812" class="navActive">投稿</text>
+    <text x="270" y="812" class="nav">保存</text>
+    <text x="330" y="812" class="nav">自分</text>
+  </g>
+</svg>
