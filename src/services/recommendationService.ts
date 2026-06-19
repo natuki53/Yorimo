@@ -19,6 +19,13 @@ type FeedbackWithSpot = Feedback & {
   spot: Pick<Spot, "category" | "tags">;
 };
 
+type RouteLocation = Pick<
+  Route,
+  "startName" | "startLat" | "startLng" | "endName" | "endLat" | "endLng" | "viaStationNames"
+>;
+
+type SpotRouteLocation = Pick<Spot, "lat" | "lng" | "stationName">;
+
 type BehaviorProfile = {
   categoryScores: Map<string, number>;
   tagScores: Map<string, number>;
@@ -51,6 +58,22 @@ const NEGATIVE_ACTION_WEIGHTS: Record<string, number> = {
 const clampScore = (score: number) => Math.max(0, Math.min(100, Math.round(score)));
 
 const uniq = (values: string[]) => Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+
+const normalizeStationName = (stationName?: string | null) => {
+  if (!stationName) {
+    return null;
+  }
+
+  const normalized = stationName.trim().replace(/\s+/g, "").replace(/駅$/, "").toLocaleLowerCase("ja-JP");
+  return normalized || null;
+};
+
+const getRouteStationNames = (route: RouteLocation) =>
+  new Set(
+    [route.startName, route.endName, ...route.viaStationNames]
+      .map((stationName) => normalizeStationName(stationName))
+      .filter((stationName): stationName is string => Boolean(stationName))
+  );
 
 const buildBehaviorProfile = (
   feedbacks: FeedbackWithSpot[],
@@ -97,10 +120,34 @@ const scoreBehavior = (spot: Spot, profile: BehaviorProfile) => {
   return clampScore(rawScore);
 };
 
-const scoreRouteFit = (
-  spot: Spot,
+const scoreLinearRouteFit = (spot: SpotRouteLocation, route: RouteLocation) => {
+  const routeDistance = distancePointToSegmentKm(
+    { lat: spot.lat, lng: spot.lng },
+    { lat: route.startLat, lng: route.startLng },
+    { lat: route.endLat, lng: route.endLng }
+  );
+
+  return routeDistance <= 0.5 ? 100 : routeDistance <= 1.5 ? 85 : routeDistance <= 3 ? 65 : routeDistance <= 5 ? 45 : 20;
+};
+
+const scoreStationRouteFit = (spot: SpotRouteLocation, route: RouteLocation) => {
+  const spotStationName = normalizeStationName(spot.stationName);
+  if (!spotStationName) {
+    return null;
+  }
+
+  const routeStationNames = getRouteStationNames(route);
+  if (routeStationNames.has(spotStationName)) {
+    return 100;
+  }
+
+  return route.viaStationNames.length > 0 ? 20 : null;
+};
+
+export const scoreRouteFit = (
+  spot: SpotRouteLocation,
   current: { lat: number; lng: number },
-  route: Route | null
+  route: RouteLocation | null
 ) => {
   const currentDistance = distanceKm(current, { lat: spot.lat, lng: spot.lng });
   const currentScore =
@@ -110,13 +157,7 @@ const scoreRouteFit = (
     return currentScore;
   }
 
-  const routeDistance = distancePointToSegmentKm(
-    { lat: spot.lat, lng: spot.lng },
-    { lat: route.startLat, lng: route.startLng },
-    { lat: route.endLat, lng: route.endLng }
-  );
-  const routeScore =
-    routeDistance <= 0.5 ? 100 : routeDistance <= 1.5 ? 85 : routeDistance <= 3 ? 65 : routeDistance <= 5 ? 45 : 20;
+  const routeScore = scoreStationRouteFit(spot, route) ?? scoreLinearRouteFit(spot, route);
 
   return clampScore(currentScore * 0.45 + routeScore * 0.55);
 };

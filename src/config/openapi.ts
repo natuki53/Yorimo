@@ -109,7 +109,12 @@ export const openApiSpec = {
           endName: { type: "string", example: "新宿駅" },
           endLat: { type: "number", example: 35.689592 },
           endLng: { type: "number", example: 139.700413 },
-          viaStationNames: { type: "array", items: { type: "string" }, example: ["神田", "四ツ谷"] },
+          viaStationNames: {
+            type: "array",
+            items: { type: "string" },
+            description: "電車・駅ベースのルートでは経由駅を指定してください。推薦では Spot.stationName と照合されます。",
+            example: ["神田", "御茶ノ水", "四ツ谷"]
+          },
           usualDepartureTime: { type: "string", nullable: true, example: "18:00" },
           usualArrivalTime: { type: "string", nullable: true, example: "18:35" }
         }
