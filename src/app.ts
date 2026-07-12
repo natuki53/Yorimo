@@ -26,8 +26,18 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
       directives: {
+        "script-src": ["'self'", "https://maps.googleapis.com", "https://maps.gstatic.com"],
+        "connect-src": [
+          "'self'",
+          "https://maps.googleapis.com",
+          "https://maps.gstatic.com",
+          "https://*.googleapis.com",
+          "https://*.gstatic.com",
+          "https://*.google.com"
+        ],
         "img-src": ["'self'", "data:", "blob:", "https:", "http:"],
-        "media-src": ["'self'", "data:", "blob:", "https:", "http:"]
+        "media-src": ["'self'", "data:", "blob:", "https:", "http:"],
+        "worker-src": ["'self'", "blob:"]
       }
     }
   })

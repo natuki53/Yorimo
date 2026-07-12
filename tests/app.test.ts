@@ -19,6 +19,16 @@ describe("Yorimo API", () => {
     expect(response.headers["cache-control"]).toBe("no-store");
   });
 
+  it("allows the Google Maps JavaScript runtime in the content security policy", async () => {
+    const response = await request(app).get("/health");
+    const policy = response.headers["content-security-policy"];
+
+    expect(policy).toContain("script-src 'self' https://maps.googleapis.com https://maps.gstatic.com");
+    expect(policy).toContain("connect-src 'self' https://maps.googleapis.com https://maps.gstatic.com");
+    expect(policy).toContain("https://*.googleapis.com");
+    expect(policy).toContain("worker-src 'self' blob:");
+  });
+
   it("keeps public registration validation available in demo mode", async () => {
     const response = await request(app).post("/api/auth/register").send({
       name: "",
