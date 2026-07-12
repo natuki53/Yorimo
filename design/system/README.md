@@ -72,7 +72,7 @@
 - 通報とブロックのアイコンは、同じ危険色 `#E1306C` と背景 `#FDE7F0` を使います。
 - マップ系ユーティリティアイコンには Google Maps 風の青 `#1A73E8` を使います。
 - プロダクト UI では、絵文字、ブランドロゴ、混在したアイコンパックを使いません。
-- アプリアイコンは `../assets/icons/app-icon.svg` で管理し、Instagram / X / Google のロゴをコピーせず、Yorimo 独自のルート形状マークを使います。
+- アプリアイコンは `../assets/icons/app-icon.png` で管理し、Instagram / X / Google のロゴをコピーせず、Yorimo 独自のルート形状マークを使います。
 
 ### マップヘッダー
 

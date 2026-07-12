@@ -11,7 +11,7 @@
 | `penpot/yorimo-mobile-app.svg` | Penpot に取り込むメインファイル。MVP の全モバイル画面を含みます。 |
 | `penpot/yorimo-exploration.svg` | 初期検討用の4画面ボード。 |
 | `prototypes/mobile-app.html` | すばやく確認するための静的ブラウザプロトタイプ。 |
-| `assets/icons/app-icon.svg` | 生成したアプリアイコン。 |
+| `assets/icons/app-icon.png` | 生成した透過アプリアイコン。 |
 | `assets/icons/yorimo-icon-set.svg` | Penpot コンポーネント用の生成 SVG アイコンセット。 |
 
 ## Penpot への取り込み
