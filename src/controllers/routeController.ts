@@ -17,12 +17,15 @@ export const createRoute = async (req: Request, res: Response) => {
     data: {
       userId: req.user!.id,
       name: req.body.name,
+      startType: req.body.startType,
       startName: req.body.startName,
       startLat: req.body.startLat,
       startLng: req.body.startLng,
+      endType: req.body.endType,
       endName: req.body.endName,
       endLat: req.body.endLat,
       endLng: req.body.endLng,
+      travelMode: req.body.travelMode,
       viaStationNames: req.body.viaStationNames ?? [],
       usualDepartureTime: req.body.usualDepartureTime ?? null,
       usualArrivalTime: req.body.usualArrivalTime ?? null

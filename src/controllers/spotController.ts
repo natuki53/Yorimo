@@ -4,12 +4,22 @@ import { prisma } from "../utils/prisma.js";
 import { notFound } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { distanceKm } from "../utils/geo.js";
+import { syncNearbyPlaces } from "../services/googlePlacesService.js";
 import { normalizeTags, syncSpotTags } from "../services/tagService.js";
 
 export const listSpots = async (req: Request, res: Response) => {
   const query = req.query as Record<string, unknown>;
+  const lat = query.lat as number | undefined;
+  const lng = query.lng as number | undefined;
+  const radiusKm = query.radiusKm as number | undefined;
+  const offset = query.offset as number;
+  const limit = query.limit as number;
   const where: Prisma.SpotWhereInput = {};
   const and: Prisma.SpotWhereInput[] = [];
+
+  if (lat != null && lng != null) {
+    await syncNearbyPlaces({ lat, lng, radiusKm, limit: Math.min(limit, 20) });
+  }
 
   if (typeof query.category === "string") {
     where.category = { equals: query.category, mode: "insensitive" };
@@ -49,12 +59,6 @@ export const listSpots = async (req: Request, res: Response) => {
     orderBy: { createdAt: "desc" },
     take: 500
   });
-
-  const lat = query.lat as number | undefined;
-  const lng = query.lng as number | undefined;
-  const radiusKm = query.radiusKm as number | undefined;
-  const offset = query.offset as number;
-  const limit = query.limit as number;
 
   const filtered =
     lat != null && lng != null && radiusKm != null

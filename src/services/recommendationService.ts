@@ -2,6 +2,9 @@ import type { Feedback, Route, Spot, User } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
 import { forbidden, notFound } from "../utils/errors.js";
 import { distanceKm, distancePointToSegmentKm } from "../utils/geo.js";
+import { searchStations, syncNearbyPlaces } from "./googlePlacesService.js";
+import { getRailRoutePath } from "./railRouteService.js";
+import { isRecommendableSpot } from "./spotEligibilityService.js";
 
 type RecommendationInput = {
   userId: string;
@@ -21,10 +24,21 @@ type FeedbackWithSpot = Feedback & {
 
 type RouteLocation = Pick<
   Route,
-  "startName" | "startLat" | "startLng" | "endName" | "endLat" | "endLng" | "viaStationNames"
+  | "startType"
+  | "startName"
+  | "startLat"
+  | "startLng"
+  | "endType"
+  | "endName"
+  | "endLat"
+  | "endLng"
+  | "travelMode"
+  | "viaStationNames"
 >;
 
 type SpotRouteLocation = Pick<Spot, "lat" | "lng" | "stationName">;
+
+type GeoPoint = { lat: number; lng: number };
 
 type BehaviorProfile = {
   categoryScores: Map<string, number>;
@@ -74,6 +88,86 @@ const getRouteStationNames = (route: RouteLocation) =>
       .map((stationName) => normalizeStationName(stationName))
       .filter((stationName): stationName is string => Boolean(stationName))
   );
+
+const routeEndpointPoints = (route: RouteLocation) => [
+  { lat: route.startLat, lng: route.startLng },
+  { lat: route.endLat, lng: route.endLng }
+];
+
+const dedupePoints = (points: GeoPoint[], minDistanceKm = 0.25) =>
+  points.reduce<GeoPoint[]>((deduped, point) => {
+    if (!deduped.some((existing) => distanceKm(existing, point) < minDistanceKm)) {
+      deduped.push(point);
+    }
+    return deduped;
+  }, []);
+
+const sampleSegmentPoints = (start: GeoPoint, end: GeoPoint, maxSegments = 4) => {
+  const distance = distanceKm(start, end);
+  const segmentCount = Math.max(1, Math.min(maxSegments, Math.ceil(distance / 2.5)));
+
+  return Array.from({ length: segmentCount + 1 }, (_item, index) => {
+    const ratio = index / segmentCount;
+    return {
+      lat: start.lat + (end.lat - start.lat) * ratio,
+      lng: start.lng + (end.lng - start.lng) * ratio
+    };
+  });
+};
+
+const polylineDistanceKm = (points: GeoPoint[]) =>
+  points.slice(0, -1).reduce((total, point, index) => total + distanceKm(point, points[index + 1]), 0);
+
+const samplePolylinePoints = (points: GeoPoint[], maxPoints = 8) => {
+  if (points.length <= maxPoints) {
+    return dedupePoints(points);
+  }
+
+  const totalDistance = polylineDistanceKm(points);
+  if (totalDistance === 0) {
+    return dedupePoints([points[0]]);
+  }
+
+  const targets = Array.from({ length: maxPoints }, (_item, index) => (totalDistance * index) / (maxPoints - 1));
+  const sampled: GeoPoint[] = [points[0]];
+  let segmentStartDistance = 0;
+  let targetIndex = 1;
+
+  for (let index = 0; index < points.length - 1 && targetIndex < targets.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const segmentDistance = distanceKm(start, end);
+    const segmentEndDistance = segmentStartDistance + segmentDistance;
+
+    while (targetIndex < targets.length - 1 && targets[targetIndex] <= segmentEndDistance) {
+      const ratio = segmentDistance === 0 ? 0 : (targets[targetIndex] - segmentStartDistance) / segmentDistance;
+      sampled.push({
+        lat: start.lat + (end.lat - start.lat) * ratio,
+        lng: start.lng + (end.lng - start.lng) * ratio
+      });
+      targetIndex += 1;
+    }
+
+    segmentStartDistance = segmentEndDistance;
+  }
+
+  sampled.push(points[points.length - 1]);
+  return dedupePoints(sampled);
+};
+
+const distancePointToPolylineKm = (point: GeoPoint, routePoints: GeoPoint[]) => {
+  if (routePoints.length === 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+  if (routePoints.length === 1) {
+    return distanceKm(point, routePoints[0]);
+  }
+
+  return routePoints.slice(0, -1).reduce((minDistance, start, index) => {
+    const end = routePoints[index + 1];
+    return Math.min(minDistance, distancePointToSegmentKm(point, start, end));
+  }, Number.POSITIVE_INFINITY);
+};
 
 const buildBehaviorProfile = (
   feedbacks: FeedbackWithSpot[],
@@ -131,6 +225,13 @@ const scoreLinearRouteFit = (spot: SpotRouteLocation, route: RouteLocation) => {
 };
 
 const scoreStationRouteFit = (spot: SpotRouteLocation, route: RouteLocation) => {
+  if (
+    route.travelMode !== "transit" ||
+    (route.startType !== "station" && route.endType !== "station" && route.viaStationNames.length === 0)
+  ) {
+    return null;
+  }
+
   const spotStationName = normalizeStationName(spot.stationName);
   if (!spotStationName) {
     return null;
@@ -144,10 +245,67 @@ const scoreStationRouteFit = (spot: SpotRouteLocation, route: RouteLocation) => 
   return route.viaStationNames.length > 0 ? 20 : null;
 };
 
+const resolveTransitRoutePoints = async (route: RouteLocation): Promise<GeoPoint[]> => {
+  const points: GeoPoint[] = [{ lat: route.startLat, lng: route.startLng }];
+  const bias = { lat: route.startLat, lng: route.startLng };
+
+  for (const stationName of route.viaStationNames) {
+    const [candidate] = await searchStations({
+      keyword: stationName,
+      lat: bias.lat,
+      lng: bias.lng,
+      limit: 1
+    });
+    if (candidate) {
+      points.push({ lat: candidate.lat, lng: candidate.lng });
+      bias.lat = candidate.lat;
+      bias.lng = candidate.lng;
+    }
+  }
+
+  points.push({ lat: route.endLat, lng: route.endLng });
+  return dedupePoints(points);
+};
+
+const buildRouteSearchPoints = async (route: RouteLocation | null, current: GeoPoint) => {
+  if (!route) {
+    return {
+      filterPoints: [current],
+      syncPoints: [current],
+      radiusKm: 1.5
+    };
+  }
+
+  if (route.travelMode === "transit") {
+    const railRoutePoints = await getRailRoutePath({
+      startLat: route.startLat,
+      startLng: route.startLng,
+      endLat: route.endLat,
+      endLng: route.endLng
+    });
+    const routePoints = railRoutePoints.length >= 2 ? railRoutePoints : await resolveTransitRoutePoints(route);
+
+    return {
+      filterPoints: routePoints,
+      syncPoints: samplePolylinePoints(routePoints, 8),
+      radiusKm: railRoutePoints.length >= 2 ? 0.9 : 1.2
+    };
+  }
+
+  const [start, end] = routeEndpointPoints(route);
+  const sampledPoints = dedupePoints(sampleSegmentPoints(start, end));
+  return {
+    filterPoints: sampledPoints,
+    syncPoints: sampledPoints,
+    radiusKm: route.travelMode === "walking" || route.travelMode === "bicycling" ? 1 : 1.5
+  };
+};
+
 export const scoreRouteFit = (
   spot: SpotRouteLocation,
   current: { lat: number; lng: number },
-  route: RouteLocation | null
+  route: RouteLocation | null,
+  routePoints: GeoPoint[] = []
 ) => {
   const currentDistance = distanceKm(current, { lat: spot.lat, lng: spot.lng });
   const currentScore =
@@ -157,9 +315,21 @@ export const scoreRouteFit = (
     return currentScore;
   }
 
-  const routeScore = scoreStationRouteFit(spot, route) ?? scoreLinearRouteFit(spot, route);
+  const routeDistance = distancePointToPolylineKm({ lat: spot.lat, lng: spot.lng }, routePoints);
+  const polylineRouteScore = Number.isFinite(routeDistance)
+    ? routeDistance <= 0.3
+      ? 100
+      : routeDistance <= 0.9
+        ? 88
+        : routeDistance <= 1.5
+          ? 72
+          : routeDistance <= 3
+            ? 50
+            : 20
+    : null;
+  const routeScore = scoreStationRouteFit(spot, route) ?? polylineRouteScore ?? scoreLinearRouteFit(spot, route);
 
-  return clampScore(currentScore * 0.45 + routeScore * 0.55);
+  return clampScore(currentScore * 0.2 + routeScore * 0.8);
 };
 
 const scoreInterest = (spot: Spot, interestTags: string[]) => {
@@ -365,22 +535,48 @@ export const getRecommendations = async (input: RecommendationInput) => {
     }
   }
 
-  const spots = await prisma.spot.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 200
-  });
-
   const effectiveBudgetMin = input.budgetMin ?? user.defaultBudgetMin;
   const effectiveBudgetMax = input.budgetMax ?? user.defaultBudgetMax;
   const interestTags = uniq([...user.interests, ...input.interestTags]);
   const behaviorProfile = buildBehaviorProfile(user.feedbacks, user.savedSpots);
   const current = { lat: input.currentLat, lng: input.currentLng };
+  const searchRadiusKm = Math.max(1.5, Math.min(8, input.availableMinutes / 10));
+  const routeSearch = await buildRouteSearchPoints(route, current);
+  const nearbySearchPoints = route ? routeSearch.syncPoints : [current];
+
+  await Promise.all(
+    nearbySearchPoints.slice(0, route ? 8 : 1).map((point) =>
+      syncNearbyPlaces({
+        lat: point.lat,
+        lng: point.lng,
+        limit: route ? 10 : 20,
+        radiusKm: route ? routeSearch.radiusKm : searchRadiusKm
+      })
+    )
+  );
+
+  const spots = (await prisma.spot.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 500
+  })).filter(isRecommendableSpot).filter((spot) => {
+    const point = { lat: spot.lat, lng: spot.lng };
+    const currentDistance = distanceKm(current, { lat: spot.lat, lng: spot.lng });
+    if (!route) {
+      return currentDistance <= searchRadiusKm;
+    }
+
+    if (route.travelMode === "transit" && scoreStationRouteFit(spot, route) != null) {
+      return true;
+    }
+
+    return distancePointToPolylineKm(point, routeSearch.filterPoints) <= routeSearch.radiusKm;
+  });
 
   const items = spots
     .map((spot) => {
       const breakdown: ScoreBreakdown = {
         behavior: scoreBehavior(spot, behaviorProfile),
-        route: scoreRouteFit(spot, current, route),
+        route: scoreRouteFit(spot, current, route, routeSearch.filterPoints),
         interest: scoreInterest(spot, interestTags),
         time: scoreTime(spot, input.availableMinutes),
         budget: scoreBudget(spot, effectiveBudgetMin, effectiveBudgetMax),

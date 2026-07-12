@@ -103,12 +103,30 @@ export const openApiSpec = {
         required: ["name", "startName", "startLat", "startLng", "endName", "endLat", "endLng"],
         properties: {
           name: { type: "string", example: "学校帰り" },
+          startType: {
+            type: "string",
+            enum: ["station", "pin"],
+            default: "station",
+            description: "出発地点を駅候補として扱うか、座標ピンとして扱うか。"
+          },
           startName: { type: "string", example: "東京駅" },
           startLat: { type: "number", example: 35.681236 },
           startLng: { type: "number", example: 139.767125 },
+          endType: {
+            type: "string",
+            enum: ["station", "pin"],
+            default: "station",
+            description: "到着地点を駅候補として扱うか、座標ピンとして扱うか。"
+          },
           endName: { type: "string", example: "新宿駅" },
           endLat: { type: "number", example: 35.689592 },
           endLng: { type: "number", example: 139.700413 },
+          travelMode: {
+            type: "string",
+            enum: ["transit", "driving", "walking", "bicycling"],
+            default: "transit",
+            description: "地図表示に使う移動手段。transit は鉄道系の経路、その他は道路ベースの経路を使います。"
+          },
           viaStationNames: {
             type: "array",
             items: { type: "string" },
@@ -123,9 +141,9 @@ export const openApiSpec = {
         type: "object",
         required: ["name", "category", "lat", "lng"],
         properties: {
-          name: { type: "string", example: "駅前クレープ" },
+          name: { type: "string", example: "Google Placesから取得した店舗名" },
           description: { type: "string", nullable: true },
-          category: { type: "string", example: "スイーツ" },
+          category: { type: "string", example: "カフェ" },
           lat: { type: "number", example: 35.681236 },
           lng: { type: "number", example: 139.767125 },
           address: { type: "string", nullable: true },
@@ -133,7 +151,7 @@ export const openApiSpec = {
           priceMin: { type: "integer", nullable: true, example: 500 },
           priceMax: { type: "integer", nullable: true, example: 1000 },
           openingHours: { type: "string", nullable: true },
-          tags: { type: "array", items: { type: "string" }, example: ["スイーツ", "友達と行ける場所"] },
+          tags: { type: "array", items: { type: "string" }, example: ["カフェ", "現在地周辺", "実店舗"] },
           imageUrl: { type: "string", nullable: true },
           averageStayMinutes: { type: "integer", nullable: true, example: 30 }
         }

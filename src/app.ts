@@ -12,7 +12,17 @@ import { sendSuccess } from "./utils/apiResponse.js";
 
 export const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        "img-src": ["'self'", "data:", "blob:", "https:", "http:"],
+        "media-src": ["'self'", "data:", "blob:", "https:", "http:"]
+      }
+    }
+  })
+);
 app.use(
   cors({
     origin(origin, callback) {

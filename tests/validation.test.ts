@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { updateProfileSchema } from "../src/validations/authValidation.js";
 import { recommendationRequestSchema } from "../src/validations/recommendationValidation.js";
+import { routeCreateSchema } from "../src/validations/routeValidation.js";
 
 const baseRecommendationRequest = {
   currentLat: 35.681236,
@@ -55,5 +56,38 @@ describe("profile validation", () => {
     });
 
     expect(parsed.defaultBudgetMax).toBe(1200);
+  });
+});
+
+describe("route validation", () => {
+  const baseRoute = {
+    name: "帰り道",
+    startName: "東京駅",
+    startLat: 35.681236,
+    startLng: 139.767125,
+    endName: "新宿駅",
+    endLat: 35.689592,
+    endLng: 139.700413
+  };
+
+  it("defaults route endpoint types and travel mode", () => {
+    const parsed = routeCreateSchema.parse(baseRoute);
+
+    expect(parsed.startType).toBe("station");
+    expect(parsed.endType).toBe("station");
+    expect(parsed.travelMode).toBe("transit");
+  });
+
+  it("accepts pin endpoints and road-based travel modes", () => {
+    const parsed = routeCreateSchema.parse({
+      ...baseRoute,
+      startType: "pin",
+      endType: "pin",
+      travelMode: "bicycling"
+    });
+
+    expect(parsed.startType).toBe("pin");
+    expect(parsed.endType).toBe("pin");
+    expect(parsed.travelMode).toBe("bicycling");
   });
 });

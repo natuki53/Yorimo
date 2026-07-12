@@ -4,7 +4,12 @@ dotenv.config();
 
 const parseCorsOrigins = (value?: string): string[] => {
   if (!value) {
-    return ["http://localhost:3000", "http://localhost:5173"];
+    return [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173"
+    ];
   }
 
   return value
@@ -24,7 +29,9 @@ export const env = {
   NODE_ENV: nodeEnv,
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_URL: process.env.DATABASE_URL,
+  GOOGLE_MAPS_SERVER_API_KEY:
+    process.env.GOOGLE_MAPS_SERVER_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY,
   JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "7d",
-  CORS_ORIGINS: parseCorsOrigins(process.env.CORS_ORIGIN)
+  CORS_ORIGINS: parseCorsOrigins(process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)
 };

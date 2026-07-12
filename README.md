@@ -29,10 +29,14 @@ APIサーバー:
 - Swagger UI: `http://localhost:4000/api-docs`
 - OpenAPI JSON: `http://localhost:4000/openapi.json`
 
+現在地周辺の実店舗と駅検索を使うには、ルートの `.env` に `GOOGLE_MAPS_SERVER_API_KEY` を設定してください。このキーは Places API (New) を許可し、サーバー/IP制限で運用します。フロントの地図表示用キー `VITE_GOOGLE_MAPS_API_KEY` とは別に扱います。
+
 ## ドキュメント
 
 - API実行例: [docs/api.md](./docs/api.md)
 - 技術ドキュメント: [.docs/README.md](./.docs/README.md)
+
+`npm run prisma:seed` はログイン確認用ユーザーとルートだけを作成します。店舗データは seed せず、ログイン後の現在地を使って Google Places から取得します。
 
 シードユーザー:
 
@@ -86,6 +90,7 @@ npm run prisma:seed
 - `PATCH /api/routes/:id`
 - `DELETE /api/routes/:id`
 - `GET /api/spots`
+- `GET /api/stations?keyword=東京`
 - `GET /api/spots/:id`
 - `POST /api/spots`
 - `PATCH /api/spots/:id`

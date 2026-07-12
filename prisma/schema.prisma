@@ -44,162 +44,177 @@ enum ReportReason {
   other
 }
 
-model User {
-  id                    String      @id @default(cuid())
-  name                  String
-  email                 String      @unique
-  passwordHash          String
-  ageRange              String?
-  homeStation           String?
-  schoolOrWorkStation   String?
-  interests             String[]    @default([])
-  defaultBudgetMin      Int?
-  defaultBudgetMax      Int?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+enum RouteEndpointType {
+  station
+  pin
+}
 
-  routes                Route[]
-  posts                 Post[]
-  feedbacks             Feedback[]
-  savedSpots            SavedSpot[]
-  reportsMade           Report[]    @relation("ReportReporter")
-  blockedUsers          Block[]     @relation("BlockBlocker")
-  blockedBy             Block[]     @relation("BlockBlocked")
+enum RouteTravelMode {
+  transit
+  driving
+  walking
+  bicycling
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  ageRange            String?
+  homeStation         String?
+  schoolOrWorkStation String?
+  interests           String[] @default([])
+  defaultBudgetMin    Int?
+  defaultBudgetMax    Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  routes       Route[]
+  posts        Post[]
+  feedbacks    Feedback[]
+  savedSpots   SavedSpot[]
+  reportsMade  Report[]    @relation("ReportReporter")
+  blockedUsers Block[]     @relation("BlockBlocker")
+  blockedBy    Block[]     @relation("BlockBlocked")
 }
 
 model Route {
-  id                    String      @id @default(cuid())
-  userId                String
-  name                  String
-  startName             String
-  startLat              Float
-  startLng              Float
-  endName               String
-  endLat                Float
-  endLng                Float
-  viaStationNames       String[]    @default([])
-  usualDepartureTime    String?
-  usualArrivalTime      String?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id                 String            @id @default(cuid())
+  userId             String
+  name               String
+  startType          RouteEndpointType @default(station)
+  startName          String
+  startLat           Float
+  startLng           Float
+  endType            RouteEndpointType @default(station)
+  endName            String
+  endLat             Float
+  endLng             Float
+  travelMode         RouteTravelMode   @default(transit)
+  viaStationNames    String[]          @default([])
+  usualDepartureTime String?
+  usualArrivalTime   String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Spot {
-  id                    String      @id @default(cuid())
-  name                  String
-  description           String?
-  category              String
-  lat                   Float
-  lng                   Float
-  address               String?
-  stationName           String?
-  priceMin              Int?
-  priceMax              Int?
-  openingHours          String?
-  tags                  String[]    @default([])
-  imageUrl              String?
-  averageStayMinutes    Int?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+  category           String
+  lat                Float
+  lng                Float
+  address            String?
+  stationName        String?
+  priceMin           Int?
+  priceMax           Int?
+  openingHours       String?
+  tags               String[] @default([])
+  imageUrl           String?
+  averageStayMinutes Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  posts                 Post[]
-  feedbacks             Feedback[]
-  savedBy               SavedSpot[]
-  spotTags              SpotTag[]
+  posts     Post[]
+  feedbacks Feedback[]
+  savedBy   SavedSpot[]
+  spotTags  SpotTag[]
 }
 
 model Post {
-  id                    String      @id @default(cuid())
-  userId                String
-  spotId                String
-  type                  PostType
-  mediaUrl              String?
-  caption               String?
-  rating                Int?
-  moodTags              String[]    @default([])
-  crowdLevel            String?
-  stayMinutes           Int?
-  budgetUsed            Int?
-  visibility            Visibility  @default(public)
-  expiresAt             DateTime?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id          String     @id @default(cuid())
+  userId      String
+  spotId      String
+  type        PostType
+  mediaUrl    String?
+  caption     String?
+  rating      Int?
+  moodTags    String[]   @default([])
+  crowdLevel  String?
+  stayMinutes Int?
+  budgetUsed  Int?
+  visibility  Visibility @default(public)
+  expiresAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  spot                  Spot        @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  feedbacks             Feedback[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot      Spot       @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  feedbacks Feedback[]
 }
 
 model Feedback {
-  id                    String          @id @default(cuid())
-  userId                String
-  spotId                String
-  postId                String?
-  action                FeedbackAction
-  createdAt             DateTime        @default(now())
+  id        String         @id @default(cuid())
+  userId    String
+  spotId    String
+  postId    String?
+  action    FeedbackAction
+  createdAt DateTime       @default(now())
 
-  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  spot                  Spot            @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  post                  Post?           @relation(fields: [postId], references: [id], onDelete: SetNull)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot Spot  @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   @@index([userId, action])
   @@index([spotId])
 }
 
 model SavedSpot {
-  userId                String
-  spotId                String
-  createdAt             DateTime    @default(now())
+  userId    String
+  spotId    String
+  createdAt DateTime @default(now())
 
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  spot                  Spot        @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
 
   @@id([userId, spotId])
 }
 
 model Report {
-  id                    String              @id @default(cuid())
-  reporterId            String
-  targetType            ReportTargetType
-  targetId              String
-  reason                ReportReason
-  detail                String?
-  createdAt             DateTime            @default(now())
+  id         String           @id @default(cuid())
+  reporterId String
+  targetType ReportTargetType
+  targetId   String
+  reason     ReportReason
+  detail     String?
+  createdAt  DateTime         @default(now())
 
-  reporter              User                @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([targetType, targetId])
 }
 
 model Block {
-  blockerId             String
-  blockedUserId         String
-  createdAt             DateTime    @default(now())
+  blockerId     String
+  blockedUserId String
+  createdAt     DateTime @default(now())
 
-  blocker               User        @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
-  blockedUser           User        @relation("BlockBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  blocker     User @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUser User @relation("BlockBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
 
   @@id([blockerId, blockedUserId])
 }
 
 model Tag {
-  id                    String      @id @default(cuid())
-  name                  String      @unique
-  category              String?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  spotTags              SpotTag[]
+  spotTags SpotTag[]
 }
 
 model SpotTag {
-  spotId                String
-  tagId                 String
+  spotId String
+  tagId  String
 
-  spot                  Spot        @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  tag                   Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([spotId, tagId])
 }

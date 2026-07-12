@@ -6,10 +6,13 @@ import { authRouter } from "./authRoutes.js";
 import { blockRouter, reportRouter } from "./safetyRoutes.js";
 import { feedbackRouter } from "./feedbackRoutes.js";
 import { postRouter } from "./postRoutes.js";
+import { placePhotoRouter } from "./placePhotoRoutes.js";
+import { railRouteRouter } from "./railRouteRoutes.js";
 import { recommendationRouter } from "./recommendationRoutes.js";
 import { routeRouter } from "./routeRoutes.js";
 import { savedSpotRouter } from "./savedSpotRoutes.js";
 import { spotRouter } from "./spotRoutes.js";
+import { stationRouter } from "./stationRoutes.js";
 
 export const apiRouter = Router();
 
@@ -18,8 +21,11 @@ apiRouter.use("/routes", routeRouter);
 apiRouter.use("/spots", spotRouter);
 apiRouter.use("/recommendations", recommendationRouter);
 apiRouter.use("/posts", postRouter);
+apiRouter.use("/place-photos", placePhotoRouter);
+apiRouter.use("/rail-routes", railRouteRouter);
 apiRouter.use("/feedback", feedbackRouter);
 apiRouter.use("/saved-spots", savedSpotRouter);
+apiRouter.use("/stations", stationRouter);
 apiRouter.use("/reports", reportRouter);
 apiRouter.use("/blocks", blockRouter);
 apiRouter.get("/feed", requireAuth, asyncHandler(getFeed));
