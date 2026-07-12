@@ -1,5 +1,5 @@
-import { FormEvent, useState } from "react";
-import { LogIn, UserPlus, X } from "lucide-react";
+import { FormEvent, useRef, useState } from "react";
+import { ArrowRight, Clock3, Coffee, LogIn, MapPin, Navigation, Sparkles, UserPlus, X } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 
 export type AuthMode = "login" | "register";
@@ -153,36 +153,144 @@ export function AuthGate({
   onSubmit,
   statusMessage
 }: Omit<AuthFormProps, "error"> & { error?: string | null; statusMessage?: string | null }) {
+  const authCardRef = useRef<HTMLElement>(null);
+
+  const showAuthForm = (nextMode: AuthMode) => {
+    onModeChange(nextMode);
+    window.requestAnimationFrame(() => {
+      const card = authCardRef.current;
+      if (card && typeof card.scrollIntoView === "function") {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  };
+
   return (
-    <main className="auth-gate" data-testid="auth-gate">
-      <section className="auth-hero" aria-label="Yorimo">
-        <div className="desktop-brand auth-brand">
+    <main className="auth-gate landing-gate" data-testid="auth-gate">
+      <div className="landing-atmosphere" aria-hidden="true">
+        <span className="landing-orb landing-orb-a" />
+        <span className="landing-orb landing-orb-b" />
+        <span className="landing-orb landing-orb-c" />
+      </div>
+
+      <header className="landing-header">
+        <div className="desktop-brand landing-brand">
           <BrandMark />
           <div>
             <strong>Yorimo</strong>
             <span className="brand-subtitle">日常ルートの寄り道マップ</span>
           </div>
         </div>
+        <nav className="landing-nav" aria-label="Yorimoの特徴">
+          <span>ルートに沿って</span>
+          <span>今の気分で</span>
+          <span>無理なく寄れる</span>
+        </nav>
+        <div className="landing-header-actions">
+          <button aria-label="ログインフォームを表示" onClick={() => showAuthForm("login")} type="button">ログイン</button>
+          <button className="landing-header-primary" onClick={() => showAuthForm("register")} type="button">
+            無料ではじめる
+          </button>
+        </div>
+      </header>
+
+      <section className="auth-hero" aria-label="Yorimo">
         <div className="auth-copy">
-          <div className="panel-label">Route-based Recommendation</div>
-          <h1>いつもの移動に、ちょうどいい寄り道を。</h1>
-          <p>現在地、登録ルート、興味、保存履歴をもとに、帰り道で無理なく寄れる場所を推薦します。</p>
+          <p className="landing-brand-signal">Yorimo</p>
+          <h1>
+            <span>帰り道に、</span>
+            <em>ちょうどいい発見</em>
+            <span>を。</span>
+          </h1>
+          <p>現在地やいつものルート、今の気分をもとに、無理なく立ち寄れる場所を見つけます。</p>
+          <div className="landing-hero-actions">
+            <button className="landing-main-action" onClick={() => showAuthForm("register")} type="button">
+              寄り道を見つける <ArrowRight size={18} />
+            </button>
+            <span>登録無料・すぐに使えます</span>
+          </div>
         </div>
+
         <div className="auth-preview" aria-hidden="true">
-          <div className="auth-preview-route" />
-          <span className="auth-pin one">91</span>
-          <span className="auth-pin two">88</span>
-          <span className="auth-pin three">76</span>
+          <div className="landing-preview-glow" />
+          <div className="landing-map-label">
+            <Navigation size={14} /> 東京駅 → 自宅
+          </div>
+          <svg className="landing-route-svg" viewBox="0 0 360 400" preserveAspectRatio="none">
+            <path
+              className="landing-route-path"
+              d="M68 290 C 90 210, 140 250, 168 168 C 196 96, 250 128, 292 72"
+              fill="none"
+              pathLength="1"
+            />
+            <circle className="landing-route-pulse" cx="168" cy="168" r="18" />
+          </svg>
+          <span className="auth-pin one">
+            <MapPin size={16} />
+          </span>
+          <span className="auth-pin two">
+            <Coffee size={16} />
+          </span>
+          <span className="auth-pin three">
+            <MapPin size={16} />
+          </span>
+          <div className="landing-detour-badge">
+            帰り道から <strong>+6分</strong>
+          </div>
+          <article className="landing-spot-card">
+            <div className="landing-spot-icon">
+              <Coffee size={20} />
+            </div>
+            <div>
+              <span>今日のおすすめ</span>
+              <strong>路地裏の小さな喫茶店</strong>
+              <small>
+                <Clock3 size={13} /> 徒歩8分 ・ 予算 ¥1,200
+              </small>
+            </div>
+          </article>
         </div>
+
+        <ul className="landing-benefits" aria-label="Yorimoでできること">
+          <li>
+            <Navigation size={18} strokeWidth={2.2} />
+            <span>
+              <strong>ルート基準</strong>
+              帰り道から探せる
+            </span>
+          </li>
+          <li>
+            <Clock3 size={18} strokeWidth={2.2} />
+            <span>
+              <strong>時間に合わせる</strong>
+              15分から調整
+            </span>
+          </li>
+          <li>
+            <Sparkles size={18} strokeWidth={2.2} />
+            <span>
+              <strong>気分で選ぶ</strong>
+              好みに寄り添う
+            </span>
+          </li>
+        </ul>
       </section>
 
-      <section className="auth-card" aria-label={mode === "register" ? "アカウント作成" : "ログイン"}>
+      <section
+        className="auth-card landing-auth-card"
+        ref={authCardRef}
+        aria-label={mode === "register" ? "アカウント作成" : "ログイン"}
+      >
         <div className="auth-card-head">
           <div>
-            <div className="panel-label">Account Required</div>
+            <div className="panel-label">Welcome to Yorimo</div>
             <h2>{mode === "register" ? "アカウント作成" : "ログイン"}</h2>
           </div>
-          <p>Yorimoはルートと行動履歴を使うため、ログイン後に利用できます。</p>
+          <p>
+            {mode === "register"
+              ? "無料アカウントを作って、あなただけの寄り道を見つけましょう。"
+              : "続きから、あなたに合う寄り道を探しましょう。"}
+          </p>
         </div>
         {statusMessage ? <p className="inline-alert">{statusMessage}</p> : null}
         <AuthForm error={error} loading={loading} mode={mode} onModeChange={onModeChange} onSubmit={onSubmit} />

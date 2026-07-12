@@ -198,17 +198,18 @@ describe("Yorimo frontend", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("switches the auth gate to registration", async () => {
+  it("switches the auth gate to registration from the landing CTA without changing the URL hash", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     const gate = await screen.findByTestId("auth-gate");
-    await user.click(within(gate).getByRole("tab", { name: "新規登録" }));
+    await user.click(within(gate).getByRole("button", { name: "寄り道を見つける" }));
 
     expect(within(gate).getByLabelText("表示名")).toBeInTheDocument();
     expect(within(gate).getByLabelText("メールアドレス")).toBeInTheDocument();
     expect(within(gate).getByLabelText("パスワード")).toBeInTheDocument();
     expect(within(gate).getByRole("button", { name: "アカウント作成" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("");
   });
 
   it("shows account setup after registration and saves profile fields separately from routes", async () => {
