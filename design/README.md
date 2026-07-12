@@ -12,6 +12,8 @@
 | `penpot/yorimo-exploration.svg` | 初期検討用の4画面ボード。 |
 | `prototypes/mobile-app.html` | すばやく確認するための静的ブラウザプロトタイプ。 |
 | `assets/icons/app-icon.png` | 生成した透過アプリアイコン。 |
+| `assets/yorimo-presentation-qr.png` | 発表スライド用QRコード（`https://yorimo.mu-natuki.com/`）。 |
+| `assets/yorimo-presentation-qr.svg` | 拡大しても劣化しない発表スライド用QRコード。 |
 | `assets/icons/yorimo-icon-set.svg` | Penpot コンポーネント用の生成 SVG アイコンセット。 |
 
 ## Penpot への取り込み
