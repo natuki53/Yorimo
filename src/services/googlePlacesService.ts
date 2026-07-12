@@ -3,6 +3,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../utils/prisma.js";
 import { isRecommendablePlaceCandidate } from "./spotEligibilityService.js";
 import { normalizeTags, syncSpotTags } from "./tagService.js";
+import { createSingleFlight } from "../utils/singleFlight.js";
 
 type NearbyPlacesInput = {
   lat: number;
@@ -62,6 +63,7 @@ type GooglePlacePhotoResponse = {
 
 const nearbySearchUrl = "https://places.googleapis.com/v1/places:searchNearby";
 const textSearchUrl = "https://places.googleapis.com/v1/places:searchText";
+const runNearbyRequest = createSingleFlight<string, Spot[]>();
 const fieldMask = [
   "places.id",
   "places.displayName",
@@ -324,7 +326,7 @@ export const getPlacePhotoUri = async (photoName: string, maxWidthPx = 720) => {
   }
 };
 
-export const syncNearbyPlaces = async ({ lat, lng, radiusKm, limit = 20 }: NearbyPlacesInput): Promise<Spot[]> => {
+const syncNearbyPlacesRequest = async ({ lat, lng, radiusKm, limit = 20 }: NearbyPlacesInput): Promise<Spot[]> => {
   if (!isConfigured()) {
     return [];
   }
@@ -373,6 +375,14 @@ export const syncNearbyPlaces = async ({ lat, lng, radiusKm, limit = 20 }: Nearb
     warnPlaces("Nearby Search request failed", error);
     return [];
   }
+};
+
+const nearbyRequestKey = ({ lat, lng, radiusKm, limit = 20 }: NearbyPlacesInput) =>
+  [lat.toFixed(5), lng.toFixed(5), clampRadiusMeters(radiusKm), Math.max(1, Math.min(20, limit))].join(":");
+
+export const syncNearbyPlaces = (input: NearbyPlacesInput): Promise<Spot[]> => {
+  const key = nearbyRequestKey(input);
+  return runNearbyRequest(key, () => syncNearbyPlacesRequest(input));
 };
 
 const toStationCandidate = (place: GooglePlace): StationCandidate | null => {

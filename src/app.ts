@@ -63,8 +63,16 @@ app.get("/ready", async (_req, res) => {
     return res.status(503).json({ success: false, error: { code: "NOT_READY", message: "Database is unavailable" } });
   }
 });
-app.get("/openapi.json", (_req, res) => res.json(openApiSpec));
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+if (env.EXPOSE_API_DOCS) {
+  app.get("/openapi.json", (_req, res) => res.json(openApiSpec));
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+} else {
+  app.use(["/openapi.json", "/api-docs"], notFoundHandler);
+}
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 app.use("/api", demoMutationLimiter, apiRouter);
 
 if (env.NODE_ENV === "production") {

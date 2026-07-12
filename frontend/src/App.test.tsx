@@ -236,6 +236,8 @@ describe("Yorimo frontend", () => {
     await user.click(within(dialog).getByRole("tab", { name: "新規登録" }));
 
     expect(await screen.findByRole("dialog", { name: "アカウント作成" })).toBeInTheDocument();
+    expect(within(dialog).getByText("発表用プロトタイプです")).toBeInTheDocument();
+    expect(within(dialog).getByText(/実在するメールアドレスや個人情報は入力しないでください/)).toBeInTheDocument();
     expect(within(dialog).getByLabelText("表示名")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "アカウントを作成" })).toBeInTheDocument();
   });

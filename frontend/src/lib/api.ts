@@ -184,11 +184,12 @@ export const api = {
     return request<RailRoutePayload>(`/api/rail-routes?${search.toString()}`, { signal });
   },
 
-  recommendations(token: string, body: RecommendationRequest) {
+  recommendations(token: string, body: RecommendationRequest, signal?: AbortSignal) {
     return request<RecommendationsPayload>("/api/recommendations", {
       method: "POST",
       token,
-      body
+      body,
+      signal
     });
   },
 

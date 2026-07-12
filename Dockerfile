@@ -6,7 +6,11 @@ RUN npm ci
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN npm --prefix frontend ci
 COPY . .
-RUN npm run prisma:generate && npm run build && npm run frontend:build
+# This value is intentionally public in the compiled browser bundle. Google
+# Cloud HTTP-referrer and API restrictions protect its use.
+ARG VITE_GOOGLE_MAPS_BROWSER_PUBLIC_ID=""
+RUN VITE_GOOGLE_MAPS_API_KEY="${VITE_GOOGLE_MAPS_BROWSER_PUBLIC_ID}" \
+    npm run prisma:generate && npm run build && npm run frontend:build
 
 FROM node:20-alpine AS runtime
 

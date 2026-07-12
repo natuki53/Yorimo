@@ -3,7 +3,8 @@ frontend/node_modules
 dist
 frontend/dist
 .git
-.env
+.env*
+secrets
 *.log
 coverage
 playwright-report

@@ -3,11 +3,11 @@ import { env } from "../config/env.js";
 import { sendError } from "../utils/apiResponse.js";
 
 const handler = (_req: unknown, res: Parameters<typeof sendError>[0]) =>
-  sendError(res, 429, "RATE_LIMITED", "操作が集中しています。しばらくしてから再試行してください");
+  sendError(res, 429, "RATE_LIMITED", "操作が集中しています。しばらくしてから再試行してください。");
 
 export const demoLoginLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 30,
+  limit: env.DEMO_LOGIN_RATE_LIMIT,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   skip: () => !env.DEMO_MODE,
@@ -16,9 +16,18 @@ export const demoLoginLimiter = rateLimit({
 
 export const demoMutationLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 120,
+  limit: env.DEMO_MUTATION_RATE_LIMIT,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   skip: (req) => !env.DEMO_MODE || ["GET", "HEAD", "OPTIONS"].includes(req.method),
+  handler
+});
+
+export const recommendationLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: env.RECOMMENDATION_RATE_LIMIT,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skip: () => !env.DEMO_MODE,
   handler
 });

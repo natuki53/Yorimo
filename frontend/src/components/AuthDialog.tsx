@@ -83,6 +83,12 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
 
       <form className="form auth-form" onSubmit={handleSubmit}>
         {isRegister ? (
+          <div className="prototype-data-notice" role="note">
+            <strong>発表用プロトタイプです</strong>
+            <span>実在するメールアドレスや個人情報は入力しないでください。登録データは発表終了後に削除されます。</span>
+          </div>
+        ) : null}
+        {isRegister ? (
           <label className="field">
             <span>表示名</span>
             <input

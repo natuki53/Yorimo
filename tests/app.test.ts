@@ -13,6 +13,12 @@ describe("Yorimo API", () => {
     });
   });
 
+  it("marks API responses as non-cacheable", async () => {
+    const response = await request(app).get("/api/routes");
+
+    expect(response.headers["cache-control"]).toBe("no-store");
+  });
+
   it("keeps public registration validation available in demo mode", async () => {
     const response = await request(app).post("/api/auth/register").send({
       name: "",

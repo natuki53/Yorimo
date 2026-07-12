@@ -23,6 +23,10 @@ const parseBoolean = (value: string | undefined, fallback = false) => {
   if (value == null) return fallback;
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 };
+const parsePositiveInt = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
 const jwtSecret = process.env.JWT_SECRET ?? (nodeEnv === "production" ? undefined : "dev-only-change-me");
 
 if (!jwtSecret) {
@@ -37,6 +41,10 @@ export const env = {
     process.env.GOOGLE_MAPS_SERVER_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY,
   DEMO_MODE: parseBoolean(process.env.DEMO_MODE, nodeEnv !== "production"),
   ALLOW_DEMO_RESET: parseBoolean(process.env.ALLOW_DEMO_RESET),
+  EXPOSE_API_DOCS: parseBoolean(process.env.EXPOSE_API_DOCS, nodeEnv !== "production"),
+  DEMO_LOGIN_RATE_LIMIT: parsePositiveInt(process.env.DEMO_LOGIN_RATE_LIMIT, 90),
+  DEMO_MUTATION_RATE_LIMIT: parsePositiveInt(process.env.DEMO_MUTATION_RATE_LIMIT, 600),
+  RECOMMENDATION_RATE_LIMIT: parsePositiveInt(process.env.RECOMMENDATION_RATE_LIMIT, 180),
   JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN:
     process.env.JWT_EXPIRES_IN ?? (parseBoolean(process.env.DEMO_MODE, nodeEnv !== "production") ? "8h" : "7d"),
