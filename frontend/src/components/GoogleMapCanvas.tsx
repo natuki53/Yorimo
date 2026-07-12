@@ -150,6 +150,26 @@ const transitModesFor = (google: typeof window.google): google.maps.TransitModeS
   google.maps.TransitMode.TRAM
 ];
 
+const transitDepartureTime = () => {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+    month: "2-digit",
+    timeZone: "Asia/Tokyo",
+    year: "numeric"
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
+  const hour = value("hour");
+  if (hour >= 5 && hour < 23) {
+    return now;
+  }
+
+  const nextServiceDay = Date.UTC(value("year"), value("month") - 1, value("day"), 0, 0, 0);
+  return new Date(nextServiceDay + (hour >= 23 ? 24 * 60 * 60 * 1000 : 0));
+};
+
 const routePath = (
   center: GeoPoint,
   route?: Route,
@@ -568,10 +588,11 @@ export function GoogleMapCanvas({
 
     const googleTravelMode = googleTravelModeFor(window.google, travelMode);
     const routeLineOptions = routeLineOptionsByMode(travelMode);
+    const departureTime = travelMode === "transit" ? transitDepartureTime() : undefined;
     const buildRoutesRequest = (preferRail: boolean): google.maps.routes.ComputeRoutesRequest => {
       return {
         destination: directionLocationFor(route, "end"),
-        departureTime: travelMode === "transit" ? new Date() : undefined,
+        departureTime,
         fields: travelMode === "transit" ? ["path", "legs"] : ["path"],
         intermediates:
           waypointSpot && travelMode !== "transit"
@@ -616,6 +637,40 @@ export function GoogleMapCanvas({
       }
     };
 
+    const renderLegacyTransitRoute = (preferRail: boolean) =>
+      new Promise<boolean>((resolve) => {
+        const service = new window.google.maps.DirectionsService();
+        service.route(
+          {
+            destination: directionLocationFor(route, "end"),
+            origin: directionLocationFor(route, "start"),
+            region: "jp",
+            transitOptions: {
+              departureTime: departureTime ?? new Date(),
+              ...(preferRail ? { modes: transitModesFor(window.google) } : {})
+            },
+            travelMode: window.google.maps.TravelMode.TRANSIT
+          },
+          (result, status) => {
+            if (renderVersion.current !== currentRenderVersion) {
+              resolve(false);
+              return;
+            }
+
+            const overviewPath = result?.routes[0]?.overview_path;
+            if (status === window.google.maps.DirectionsStatus.OK && overviewPath && overviewPath.length >= 2) {
+              drawPolyline(
+                overviewPath.map((point) => ({ lat: point.lat(), lng: point.lng() })),
+                "transit"
+              );
+              resolve(true);
+              return;
+            }
+            resolve(false);
+          }
+        );
+      });
+
     if (travelMode === "transit") {
       transitLayer.current = new window.google.maps.TransitLayer();
       transitLayer.current.setMap(map);
@@ -636,6 +691,12 @@ export function GoogleMapCanvas({
       }
 
       if (travelMode === "transit") {
+        if ((await renderLegacyTransitRoute(true)) || (await renderLegacyTransitRoute(false))) {
+          return;
+        }
+        if (renderVersion.current !== currentRenderVersion) {
+          return;
+        }
         const points = await getRailPath(route);
         if (renderVersion.current === currentRenderVersion && points.length >= 2) {
           drawPolyline(points, "transit");

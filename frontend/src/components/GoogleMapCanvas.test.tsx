@@ -22,8 +22,10 @@ type ComputeRoutesResult = { routes?: google.maps.routes.Route[] };
 type ComputeRoutesHandler = (
   request: google.maps.routes.ComputeRoutesRequest
 ) => ComputeRoutesResult | Promise<ComputeRoutesResult>;
+type LegacyRouteCallback = (result: google.maps.DirectionsResult | null, status: string) => void;
+type LegacyRouteHandler = (request: google.maps.DirectionsRequest, callback: LegacyRouteCallback) => void;
 
-const createGoogleMock = (routeImplementation?: ComputeRoutesHandler) => {
+const createGoogleMock = (routeImplementation?: ComputeRoutesHandler, legacyRouteImplementation?: LegacyRouteHandler) => {
   const routePolylineSetMap = vi.fn();
   const createPolylines = vi.fn(() => [{ setMap: routePolylineSetMap }]);
   const computedRoute = {
@@ -39,6 +41,14 @@ const createGoogleMock = (routeImplementation?: ComputeRoutesHandler) => {
     }
     return { routes: [computedRoute] };
   });
+  const legacyRoute = vi.fn().mockImplementation((request: google.maps.DirectionsRequest, callback: LegacyRouteCallback) => {
+    if (legacyRouteImplementation) {
+      legacyRouteImplementation(request, callback);
+      return;
+    }
+    callback(null, "ZERO_RESULTS");
+  });
+  const directionsService = vi.fn().mockImplementation(() => ({ route: legacyRoute }));
   const importLibrary = vi.fn(async () => ({ Route: { computeRoutes } }));
   const fitBounds = vi.fn();
   const getZoom = vi.fn(() => 13);
@@ -81,6 +91,8 @@ const createGoogleMock = (routeImplementation?: ComputeRoutesHandler) => {
   return {
     maps: {
       ControlPosition: { RIGHT_CENTER: "RIGHT_CENTER" },
+      DirectionsService: directionsService,
+      DirectionsStatus: { OK: "OK" },
       importLibrary,
       LatLngBounds: bounds,
       Map: map,
@@ -98,9 +110,11 @@ const createGoogleMock = (routeImplementation?: ComputeRoutesHandler) => {
       boundsExtend,
       computeRoutes,
       createPolylines,
+      directionsService,
       fitBounds,
       getZoom,
       importLibrary,
+      legacyRoute,
       map,
       marker,
       markerListeners,
@@ -233,6 +247,59 @@ describe("GoogleMapCanvas", () => {
 
     const titles = googleMock.spies.marker.mock.calls.map(([options]) => options.title);
     expect(titles).not.toContain("現在地");
+  });
+
+  it("falls back to the legacy transit route when the Routes API has no coverage", async () => {
+    const legacyPoints = [
+      { lat: () => 35.6812, lng: () => 139.7671 },
+      { lat: () => 35.684, lng: () => 139.741 },
+      { lat: () => 35.6896, lng: () => 139.7004 }
+    ];
+    const googleMock = createGoogleMock(
+      () => ({ routes: [] }),
+      (_request, callback) =>
+        callback(
+          { routes: [{ overview_path: legacyPoints }] } as unknown as google.maps.DirectionsResult,
+          "OK"
+        )
+    );
+    loadMock.mockResolvedValueOnce(googleMock);
+    Object.defineProperty(window, "google", { configurable: true, value: googleMock });
+
+    render(
+      <GoogleMapCanvas
+        apiKey="AIzaSyD0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D"
+        center={tokyoStation}
+        onSpotSelect={vi.fn()}
+        recommendations={fixtureRecommendations}
+        route={fixtureRoutes[0]}
+        spots={fixtureSpots}
+      />
+    );
+
+    await waitFor(() => expect(googleMock.spies.computeRoutes).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(googleMock.spies.legacyRoute).toHaveBeenCalledTimes(1));
+    expect(googleMock.spies.legacyRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transitOptions: expect.objectContaining({
+          departureTime: expect.any(Date),
+          modes: ["RAIL", "SUBWAY", "TRAIN", "TRAM"]
+        }),
+        travelMode: "TRANSIT"
+      }),
+      expect.any(Function)
+    );
+    expect(googleMock.spies.polyline).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: [
+          { lat: 35.6812, lng: 139.7671 },
+          { lat: 35.684, lng: 139.741 },
+          { lat: 35.6896, lng: 139.7004 }
+        ],
+        zIndex: 20
+      })
+    );
+    expect(railRouteMock).not.toHaveBeenCalled();
   });
 
   it("draws a rail fallback route instead of a straight line when transit directions fail", async () => {
