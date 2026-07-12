@@ -115,17 +115,19 @@ const buildSpotPinIcon = (google: typeof window.google, color: string, selected:
   };
 };
 
-const routeLineOptionsByMode = (mode: RouteTravelMode): Pick<google.maps.PolylineOptions, "strokeColor" | "strokeOpacity" | "strokeWeight"> => {
+const routeLineOptionsByMode = (
+  mode: RouteTravelMode
+): Pick<google.maps.PolylineOptions, "strokeColor" | "strokeOpacity" | "strokeWeight" | "zIndex"> => {
   if (mode === "driving") {
-    return { strokeColor: "#0f1419", strokeOpacity: 0.88, strokeWeight: 5 };
+    return { strokeColor: "#0f1419", strokeOpacity: 0.88, strokeWeight: 5, zIndex: 20 };
   }
   if (mode === "walking") {
-    return { strokeColor: "#34a853", strokeOpacity: 0.9, strokeWeight: 5 };
+    return { strokeColor: "#34a853", strokeOpacity: 0.9, strokeWeight: 5, zIndex: 20 };
   }
   if (mode === "bicycling") {
-    return { strokeColor: "#f9ab00", strokeOpacity: 0.92, strokeWeight: 5 };
+    return { strokeColor: "#f9ab00", strokeOpacity: 0.92, strokeWeight: 5, zIndex: 20 };
   }
-  return { strokeColor: "#1a73e8", strokeOpacity: 0.95, strokeWeight: 6 };
+  return { strokeColor: "#1a73e8", strokeOpacity: 0.95, strokeWeight: 6, zIndex: 20 };
 };
 
 const googleTravelModeFor = (google: typeof window.google, mode: RouteTravelMode): google.maps.TravelMode => {
