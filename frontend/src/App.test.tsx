@@ -79,8 +79,12 @@ const installAuthenticatedApi = () => {
       return jsonResponse({ success: true, data: mockUser });
     }
 
-    if (url.endsWith("/api/auth/login")) {
+    if (url.endsWith("/api/auth/demo")) {
       return jsonResponse({ success: true, data: { token: "fresh-token", user: mockUser } });
+    }
+
+    if (url.endsWith("/api/auth/login")) {
+      return jsonResponse({ success: true, data: { token: "account-token", user: mockUser } });
     }
 
     if (url.endsWith("/api/auth/register")) {
@@ -186,103 +190,75 @@ describe("Yorimo frontend", () => {
     vi.unstubAllGlobals();
   });
 
-  it("requires authentication before rendering the map experience", async () => {
+  it("shows a one-click demo gate before rendering the map experience", async () => {
     render(<App />);
 
     const gate = await screen.findByTestId("auth-gate");
     expect(gate).toBeInTheDocument();
-    expect(within(gate).getByRole("button", { name: "ログイン" })).toBeInTheDocument();
+    expect(within(gate).getAllByRole("button", { name: "デモを始める" })).toHaveLength(2);
+    expect(within(gate).queryByLabelText("メールアドレス")).not.toBeInTheDocument();
+    expect(within(gate).queryByLabelText("パスワード")).not.toBeInTheDocument();
     expect(screen.queryByTestId("desktop-experience")).not.toBeInTheDocument();
     expect(screen.queryByTestId("mobile-experience")).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "地図" })).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("switches the auth gate to registration from the landing CTA without changing the URL hash", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const gate = await screen.findByTestId("auth-gate");
-    await user.click(within(gate).getByRole("button", { name: "寄り道を見つける" }));
-
-    expect(within(gate).getByLabelText("表示名")).toBeInTheDocument();
-    expect(within(gate).getByLabelText("メールアドレス")).toBeInTheDocument();
-    expect(within(gate).getByLabelText("パスワード")).toBeInTheDocument();
-    expect(within(gate).getByRole("button", { name: "アカウント作成" })).toBeInTheDocument();
-    expect(window.location.hash).toBe("");
-  });
-
-  it("shows account setup after registration and saves profile fields separately from routes", async () => {
+  it("also supports email login from the landing page", async () => {
     const user = userEvent.setup();
     installAuthenticatedApi();
-
     render(<App />);
 
     const gate = await screen.findByTestId("auth-gate");
-    await user.click(within(gate).getByRole("tab", { name: "新規登録" }));
-    await user.type(within(gate).getByLabelText("表示名"), "New User");
-    await user.type(within(gate).getByLabelText("メールアドレス"), "new@yorimo.local");
-    await user.type(within(gate).getByLabelText("パスワード"), "password123");
-    await user.click(within(gate).getByRole("button", { name: "アカウント作成" }));
+    await user.click(within(gate).getAllByRole("button", { name: "ログイン" })[0]);
 
-    const setup = await screen.findByTestId("account-setup");
-    expect(screen.queryByTestId("desktop-experience")).not.toBeInTheDocument();
-    expect(within(setup).queryByLabelText("自宅の最寄り駅")).not.toBeInTheDocument();
-    expect(within(setup).queryByLabelText("学校・職場の最寄り駅")).not.toBeInTheDocument();
-
-    await user.selectOptions(within(setup).getByLabelText("年代"), "20代");
-    await user.click(within(setup).getByRole("button", { name: "プロフィール登録へ" }));
-
-    await user.click(await within(setup).findByRole("button", { name: "本屋" }));
-    await user.clear(within(setup).getByLabelText("最高予算"));
-    await user.type(within(setup).getByLabelText("最高予算"), "2200");
-    await user.click(within(setup).getByRole("button", { name: "保存してはじめる" }));
+    const dialog = await screen.findByRole("dialog", { name: "ログイン" });
+    await user.type(within(dialog).getByLabelText("メールアドレス"), "user@yorimo.local");
+    await user.type(within(dialog).getByLabelText("パスワード"), "password123");
+    await user.click(within(dialog).getByRole("button", { name: "ログイン" }));
 
     expect(await screen.findByTestId("desktop-experience")).toBeInTheDocument();
-
-    const registerCall = vi
-      .mocked(fetch)
-      .mock.calls.find(([input]) => {
-        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        return url.endsWith("/api/auth/register");
-      });
-    expect(registerCall).toBeDefined();
-
-    const requestBody = JSON.parse(String(registerCall?.[1]?.body ?? "{}"));
-    expect(requestBody).toMatchObject({
-      email: "new@yorimo.local",
-      name: "New User",
-      password: "password123"
-    });
-    expect(requestBody).not.toHaveProperty("ageRange");
-    expect(requestBody).not.toHaveProperty("interests");
-
-    const profileCall = vi
-      .mocked(fetch)
-      .mock.calls.find(([input, init]) => {
-        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        return url.endsWith("/api/auth/me") && init?.method === "PATCH";
-      });
-    expect(profileCall).toBeDefined();
-
-    const profileBody = JSON.parse(String(profileCall?.[1]?.body ?? "{}"));
-    expect(profileBody).toMatchObject({
-      ageRange: "20代",
-      defaultBudgetMax: 2200,
-      defaultBudgetMin: 0
-    });
-    expect(profileBody).not.toHaveProperty("homeStation");
-    expect(profileBody).not.toHaveProperty("schoolOrWorkStation");
-    expect(profileBody.interests).toEqual(expect.arrayContaining(["カフェ", "スイーツ", "本屋"]));
+    expect(window.localStorage.getItem(tokenStorageKey)).toBe("account-token");
+    expect(
+      vi.mocked(fetch).mock.calls.some(
+        ([input, init]) => String(input).endsWith("/api/auth/login") && init?.method === "POST"
+      )
+    ).toBe(true);
   });
 
-  it("shows backend login failures in the auth gate", async () => {
+  it("offers account registration from the same auth dialog", async () => {
+    const user = userEvent.setup();
+    installAuthenticatedApi();
+    render(<App />);
+
+    const gate = await screen.findByTestId("auth-gate");
+    await user.click(within(gate).getAllByRole("button", { name: "ログイン" })[0]);
+    const dialog = await screen.findByRole("dialog", { name: "ログイン" });
+    await user.click(within(dialog).getByRole("tab", { name: "新規登録" }));
+
+    expect(await screen.findByRole("dialog", { name: "アカウント作成" })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("表示名")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "アカウントを作成" })).toBeInTheDocument();
+  });
+
+  it("starts the shared demo with one click", async () => {
+    const user = userEvent.setup();
+    installAuthenticatedApi();
+    render(<App />);
+
+    const gate = await screen.findByTestId("auth-gate");
+    await user.click(within(gate).getAllByRole("button", { name: "デモを始める" })[0]);
+    expect(await screen.findByTestId("desktop-experience")).toBeInTheDocument();
+    expect(window.localStorage.getItem(tokenStorageKey)).toBe("fresh-token");
+    expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith("/api/auth/demo"))).toBe(true);
+  });
+
+  it("shows demo startup failures in the auth gate", async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockResolvedValue(
       jsonResponse(
         {
           success: false,
-          error: { code: "UNAUTHORIZED", message: "Invalid credentials" }
+          error: { code: "DEMO_NOT_READY", message: "Not ready" }
         },
         { status: 401 }
       )
@@ -291,11 +267,9 @@ describe("Yorimo frontend", () => {
     render(<App />);
 
     const gate = await screen.findByTestId("auth-gate");
-    await user.type(within(gate).getByLabelText("メールアドレス"), "user@yorimo.local");
-    await user.type(within(gate).getByLabelText("パスワード"), "wrong-password");
-    await user.click(within(gate).getByRole("button", { name: "ログイン" }));
+    await user.click(within(gate).getAllByRole("button", { name: "デモを始める" })[0]);
 
-    expect(await within(gate).findByText("ログインできませんでした。メールアドレスとパスワードを確認してください。")).toBeInTheDocument();
+    expect(await within(gate).findByText("デモを開始できませんでした。少し待ってから、もう一度お試しください。")).toBeInTheDocument();
   });
 
   it("renders the desktop planning layout after session validation", async () => {
@@ -332,5 +306,19 @@ describe("Yorimo frontend", () => {
     expect(await screen.findByTestId("mobile-experience")).toBeInTheDocument();
     expect(screen.getByText("寄り道候補")).toBeInTheDocument();
     expect(screen.queryByTestId("desktop-experience")).not.toBeInTheDocument();
+  });
+
+  it("shows the shared, read-only demo profile and protects the baseline route", async () => {
+    window.history.replaceState(null, "", "/profile");
+    window.localStorage.setItem(tokenStorageKey, "stored-token");
+    installAuthenticatedApi();
+
+    render(<App />);
+
+    expect(await screen.findByTestId("desktop-experience")).toBeInTheDocument();
+    expect(screen.getByText(/共有デモです/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "固定プロフィール" })).toBeInTheDocument();
+    expect(screen.getByText("基準ルート")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: `${fixtureRoutes[0].name}を削除` })).not.toBeInTheDocument();
   });
 });

@@ -203,6 +203,20 @@ export const openApiSpec = {
         responses: { "200": { description: "OK" } }
       }
     },
+    "/ready": {
+      get: {
+        summary: "Database and demo fixture readiness",
+        responses: { "200": { description: "Ready" }, "503": { description: "Not ready" } }
+      }
+    },
+    "/api/auth/demo": {
+      post: {
+        tags: ["Auth"],
+        summary: "共有デモを開始",
+        description: "DEMO_MODE=true の環境で固定ユーザーの独立したJWTを発行します。",
+        responses: { "200": { description: "Demo session created" }, "503": { description: "Demo fixtures are missing" } }
+      }
+    },
     "/api/auth/register": {
       post: {
         tags: ["Auth"],

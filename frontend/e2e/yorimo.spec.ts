@@ -104,7 +104,7 @@ const installApiMocks = async (page: Page) => {
         body: JSON.stringify({ success: true, data })
       });
 
-    if (path === "/api/auth/login") {
+    if (path === "/api/auth/demo") {
       await fulfill({ token: "e2e-token", user: mockUser });
       return;
     }
@@ -244,9 +244,7 @@ test("map experience supports authentication entry and recommendations on the cu
   await expect(authGate).toBeVisible();
   await expect(page.getByTestId("desktop-experience")).toBeHidden();
   await expect(page.getByTestId("mobile-experience")).toBeHidden();
-  await authGate.getByLabel("メールアドレス").fill("user@yorimo.local");
-  await authGate.getByLabel("パスワード").fill("password123");
-  await authGate.getByRole("button", { name: "ログイン" }).click();
+  await authGate.getByRole("button", { name: "デモを始める" }).first().click();
 
   if (viewportWidth >= 900) {
     await expect(page.getByTestId("desktop-experience")).toBeVisible();
@@ -254,12 +252,22 @@ test("map experience supports authentication entry and recommendations on the cu
   } else {
     await expect(page.getByTestId("mobile-experience")).toBeVisible();
     await expect(page.getByRole("navigation", { name: "メインナビゲーション" })).toBeVisible();
-    await expect(page.getByLabel("寄り道候補シートを開閉")).toBeVisible();
-    await page.getByLabel("寄り道候補シートを開閉").click();
+    const sheetHandle = page.getByLabel("寄り道候補シートを開閉");
+    await expect(sheetHandle).toBeVisible();
+    await sheetHandle.click();
     await expect(page.getByText("寄り道候補")).toBeVisible();
+
+    await sheetHandle.click();
+    const sheet = page.locator(".sheet");
+    await expect(sheet).toHaveAttribute("data-level", "expanded");
+    await page.waitForTimeout(300);
+    const [headerBox, sheetBox] = await Promise.all([page.locator(".map-header").boundingBox(), sheet.boundingBox()]);
+    expect(headerBox).not.toBeNull();
+    expect(sheetBox).not.toBeNull();
+    expect(sheetBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height + 8);
   }
 
-  await expect(page.getByRole("region", { name: "Google Maps 表示領域" })).toBeVisible();
+  await expect(page.getByRole("region", { name: /Google Maps 表示領域|簡易地図/ }).first()).toBeVisible();
 
   await page.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("link", { name: "おすすめ" }).click();
   await expect(page).toHaveURL(/\/recommendations$/);

@@ -20,6 +20,7 @@ import {
   Send,
   Share2,
   ShieldAlert,
+  Sparkles,
   Store,
   TrainFront,
   Trash2,
@@ -473,15 +474,9 @@ export function CreatePostPage({
 }: CreatePostPageProps) {
   const [view, setView] = useState<"reels" | "compose" | "feed">("reels");
   const [spotId, setSpotId] = useState(selectedSpot?.id ?? spots[0]?.id ?? "");
-  const [type, setType] = useState<PostType>("short_video");
-  const [mediaUrl, setMediaUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [rating, setRating] = useState("5");
   const [moodTags, setMoodTags] = useState("寄り道");
-  const [crowdLevel, setCrowdLevel] = useState("");
-  const [stayMinutes, setStayMinutes] = useState("");
-  const [budgetUsed, setBudgetUsed] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("public");
   const [error, setError] = useState<string | null>(null);
   const reels = feedPosts.filter((post) => post.type === "short_video");
 
@@ -499,23 +494,26 @@ export function CreatePostPage({
       setError("投稿するスポットを選択してください。");
       return;
     }
+    if (!caption.trim() || caption.trim().length > 300) {
+      setError("口コミは1〜300文字で入力してください。");
+      return;
+    }
 
     setError(null);
     await onCreatePost({
       spotId,
-      type,
-      mediaUrl: mediaUrl.trim() ? mediaUrl.trim() : null,
-      caption: caption.trim() ? caption.trim() : null,
-      rating: type === "review" ? parseNumber(rating) : null,
-      moodTags: toTagList(moodTags),
-      crowdLevel: crowdLevel.trim() ? crowdLevel.trim() : null,
-      stayMinutes: parseNumber(stayMinutes),
-      budgetUsed: parseNumber(budgetUsed),
-      visibility
+      type: "review",
+      mediaUrl: null,
+      caption: caption.trim(),
+      rating: parseNumber(rating),
+      moodTags: toTagList(moodTags).slice(0, 5),
+      crowdLevel: null,
+      stayMinutes: null,
+      budgetUsed: null,
+      visibility: "public"
     });
     setCaption("");
-    setMediaUrl("");
-    setView(type === "short_video" ? "reels" : "feed");
+    setView("feed");
   };
 
   return (
@@ -544,6 +542,7 @@ export function CreatePostPage({
 
       {view === "compose" ? (
         <form className="form" onSubmit={handleSubmit}>
+          <p className="shared-demo-note"><Sparkles size={16} /> 口コミは共有フィードに公開されます。画像・動画は投稿されません。</p>
           {error ? <p className="inline-alert">{error}</p> : null}
           <label className="field">
             <span>スポット</span>
@@ -556,80 +555,26 @@ export function CreatePostPage({
               ))}
             </select>
           </label>
-          <div className="field">
-            <span>投稿タイプ</span>
-            <div className="segmented">
-              {postTypes.map((item) => (
-                <button
-                  className={`segment ${type === item.type ? "active" : ""}`}
-                  key={item.type}
-                  onClick={() => setType(item.type)}
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
           <label className="field">
-            <span>{type === "short_video" ? "リール動画URL" : "メディアURL"}</span>
-            <input
-              className="input-like"
-              inputMode="url"
-              onChange={(event) => setMediaUrl(event.target.value)}
-              placeholder="https://..."
-              value={mediaUrl}
-            />
-          </label>
-          <label className="field">
-            <span>本文</span>
+            <span>口コミ</span>
             <textarea
               className="input-like textarea"
+              maxLength={300}
               onChange={(event) => setCaption(event.target.value)}
               placeholder="帰り道にちょうどよかった"
+              required
               value={caption}
             />
+            <small>{caption.length} / 300</small>
           </label>
-          <div className="form-grid two">
-            <label className="field">
-              <span>評価</span>
-              <input className="input-like" max={5} min={1} onChange={(event) => setRating(event.target.value)} type="number" value={rating} />
-            </label>
-            <label className="field">
-              <span>滞在分</span>
-              <input className="input-like" min={1} onChange={(event) => setStayMinutes(event.target.value)} type="number" value={stayMinutes} />
-            </label>
-          </div>
-          <div className="form-grid two">
-            <label className="field">
-              <span>使った金額</span>
-              <input className="input-like" min={0} onChange={(event) => setBudgetUsed(event.target.value)} type="number" value={budgetUsed} />
-            </label>
-            <label className="field">
-              <span>混雑</span>
-              <input className="input-like" onChange={(event) => setCrowdLevel(event.target.value)} placeholder="空いている" value={crowdLevel} />
-            </label>
-          </div>
+          <label className="field">
+            <span>評価</span>
+            <input className="input-like" max={5} min={1} onChange={(event) => setRating(event.target.value)} type="number" value={rating} />
+          </label>
           <label className="field">
             <span>タグ</span>
             <input className="input-like" onChange={(event) => setMoodTags(event.target.value)} value={moodTags} />
           </label>
-          <div className="field">
-            <span>公開範囲</span>
-            <div className="segmented three">
-              {visibilityOptions.map((option) => (
-                <button
-                  className={`segment ${visibility === option.value ? "active" : ""}`}
-                  key={option.value}
-                  onClick={() => setVisibility(option.value)}
-                  type="button"
-                >
-                  {option.label}
-                  {option.note ? <small>{option.note}</small> : null}
-                </button>
-              ))}
-            </div>
-          </div>
           <button className="primary-action submit" disabled={loading || !spotId} type="submit">
             <Send size={18} />
             投稿する
@@ -638,7 +583,7 @@ export function CreatePostPage({
       ) : view === "reels" ? (
         <div className="reel-stack">
           {reels.length === 0 ? (
-            <div className="empty-state">まだリールがありません。作成タブからリール投稿を作成できます。</div>
+            <div className="empty-state">デモ用リールを準備しています。</div>
           ) : null}
           {reels.map((post) => (
             <ReelCard key={post.id} post={post} onSpotSelect={onSpotSelect} />
@@ -1080,6 +1025,8 @@ export function ProfilePage({
         </div>
       </div>
 
+      <p className="shared-demo-note"><Sparkles size={16} /> 共有デモです。保存・口コミ・追加ルートは、ほかの参加者にも表示されます。</p>
+
       <div className="info-grid profile-grid">
         <div className="info-cell">
           <div className="cell-label">興味</div>
@@ -1098,8 +1045,8 @@ export function ProfilePage({
       <section className="settings-section">
         <div className="section-title-row">
           <div>
-            <div className="eyebrow">アカウント設定</div>
-            <h2>プロフィール変更</h2>
+            <div className="eyebrow">デモアカウント</div>
+            <h2>固定プロフィール</h2>
           </div>
           {onLogout ? (
             <button className="secondary-action" onClick={onLogout} type="button">
@@ -1107,48 +1054,12 @@ export function ProfilePage({
             </button>
           ) : null}
         </div>
-        <form className="form" onSubmit={handleProfileSubmit}>
-          {profileMessage ? <p className="inline-alert">{profileMessage}</p> : null}
-          <label className="field">
-            <span>表示名</span>
-            <input className="input-like" onChange={(event) => setName(event.target.value)} required value={name} />
-          </label>
-          <label className="field">
-            <span>年代</span>
-            <select className="input-like" onChange={(event) => setAgeRange(event.target.value)} value={ageRange}>
-              <option value="">未選択</option>
-              {["10代", "20代", "30代", "40代", "50代", "60代以上"].map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="field">
-            <span>興味</span>
-            <div className="interest-grid">
-              {interestOptions.map((tag) => (
-                <button className="app-chip" data-active={interests.includes(tag)} key={tag} onClick={() => toggleInterest(tag)} type="button">
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="form-grid two">
-            <label className="field">
-              <span>最低予算</span>
-              <input className="input-like" min={0} onChange={(event) => setBudgetMin(event.target.value)} type="number" value={budgetMin} />
-            </label>
-            <label className="field">
-              <span>最高予算</span>
-              <input className="input-like" min={0} onChange={(event) => setBudgetMax(event.target.value)} type="number" value={budgetMax} />
-            </label>
-          </div>
-          <button className="primary-action submit" disabled={loading} type="submit">
-            <Save size={18} />
-            プロフィールを保存
-          </button>
-        </form>
+        <div className="read-only-profile">
+          <div><span>年代</span><strong>{user?.ageRange ?? "未設定"}</strong></div>
+          <div><span>興味</span><strong>{user?.interests.join(" / ") || "未設定"}</strong></div>
+          <div><span>予算</span><strong>{formatMoney(user?.defaultBudgetMax)}</strong></div>
+          <small>推薦条件は地図・おすすめ画面のフィルターで自由に試せます。</small>
+        </div>
       </section>
 
       <section className="settings-section">
@@ -1234,9 +1145,13 @@ export function ProfilePage({
                 <small>{routeTravelModeLabel(route.travelMode)}</small>
                 {route.viaStationNames.length > 0 ? <small>経由: {route.viaStationNames.join(" / ")}</small> : null}
               </button>
-              <button className="icon-button danger" onClick={() => onRouteDelete(route.id)} type="button" aria-label={`${route.name}を削除`}>
-                <Trash2 size={18} />
-              </button>
+              {route.isProtected ? (
+                <span className="protected-route-badge">基準ルート</span>
+              ) : (
+                <button className="icon-button danger" onClick={() => onRouteDelete(route.id)} type="button" aria-label={`${route.name}を削除`}>
+                  <Trash2 size={18} />
+                </button>
+              )}
             </article>
           ))}
         </div>

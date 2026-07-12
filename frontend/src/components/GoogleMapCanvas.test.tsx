@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, render, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { GoogleMapCanvas } from "./GoogleMapCanvas";
 import { fixtureRecommendations, fixtureRoutes, fixtureSpots, tokyoStation } from "../test/fixtures";
 
@@ -121,6 +121,25 @@ describe("GoogleMapCanvas", () => {
     vi.clearAllMocks();
     railRouteMock.mockReset();
     Reflect.deleteProperty(window, "google");
+  });
+
+  it("uses the interactive prototype map when no Google key is available", () => {
+    const onSpotSelect = vi.fn();
+    render(
+      <GoogleMapCanvas
+        apiKey=""
+        center={tokyoStation}
+        onSpotSelect={onSpotSelect}
+        recommendations={fixtureRecommendations}
+        route={fixtureRoutes[0]}
+        spots={fixtureSpots}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "簡易地図" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: fixtureSpots[0].name }));
+    expect(onSpotSelect).toHaveBeenCalledWith(fixtureSpots[0]);
+    expect(loadMock).not.toHaveBeenCalled();
   });
 
   it("loads Google Maps and draws the registered transit route when an API key is provided", async () => {
@@ -263,12 +282,13 @@ describe("GoogleMapCanvas", () => {
       })
     );
     expect(retryRequest.transitOptions).not.toHaveProperty("modes");
-    await waitFor(() => expect(googleMock.spies.polyline).toHaveBeenCalledTimes(1));
-    expect(googleMock.spies.polyline).toHaveBeenCalledWith(
-      expect.objectContaining({
-        geodesic: false,
-        path: railPoints
-      })
+    await waitFor(() =>
+      expect(googleMock.spies.polyline).toHaveBeenCalledWith(
+        expect.objectContaining({
+          geodesic: false,
+          path: railPoints
+        })
+      )
     );
     expect(railRouteMock).toHaveBeenCalledWith({
       startLat: fixtureRoutes[0].startLat,
@@ -278,6 +298,28 @@ describe("GoogleMapCanvas", () => {
     });
     expect(googleMock.spies.transitLayer).toHaveBeenCalledTimes(1);
     expect(googleMock.spies.transitLayerSetMap).toHaveBeenCalledWith(expect.any(Object));
+  });
+
+  it("does not draw a misleading straight line when transit route providers fail", async () => {
+    railRouteMock.mockResolvedValueOnce({ points: [], source: "none", total: 0 });
+    const googleMock = createGoogleMock((_request, callback) => callback(null, "ZERO_RESULTS"));
+    loadMock.mockResolvedValueOnce(googleMock);
+    Object.defineProperty(window, "google", { configurable: true, value: googleMock });
+
+    render(
+      <GoogleMapCanvas
+        apiKey="AIzaSyD0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D"
+        center={tokyoStation}
+        onSpotSelect={vi.fn()}
+        recommendations={fixtureRecommendations}
+        route={fixtureRoutes[0]}
+        spots={fixtureSpots}
+      />
+    );
+
+    await waitFor(() => expect(googleMock.spies.route).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(railRouteMock).toHaveBeenCalledTimes(1));
+    expect(googleMock.spies.polyline).not.toHaveBeenCalled();
   });
 
   it("uses road directions with a waypoint for driving routes", async () => {

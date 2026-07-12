@@ -544,7 +544,7 @@ export const getRecommendations = async (input: RecommendationInput) => {
   const routeSearch = await buildRouteSearchPoints(route, current);
   const nearbySearchPoints = route ? routeSearch.syncPoints : [current];
 
-  await Promise.all(
+  const syncedBatches = await Promise.all(
     nearbySearchPoints.slice(0, route ? 8 : 1).map((point) =>
       syncNearbyPlaces({
         lat: point.lat,
@@ -554,6 +554,7 @@ export const getRecommendations = async (input: RecommendationInput) => {
       })
     )
   );
+  const googleSpotIds = new Set(syncedBatches.flat().map((spot) => spot.id));
 
   const spots = (await prisma.spot.findMany({
     orderBy: { createdAt: "desc" },
@@ -592,8 +593,14 @@ export const getRecommendations = async (input: RecommendationInput) => {
         reasons: buildReasons(spot, breakdown, input, effectiveBudgetMax)
       };
     })
-    .sort((a, b) => b.yorimichiScore - a.yorimichiScore)
+    .sort((a, b) => {
+      const sourcePriority = Number(googleSpotIds.has(b.spot.id)) - Number(googleSpotIds.has(a.spot.id));
+      return sourcePriority || b.yorimichiScore - a.yorimichiScore;
+    })
     .slice(0, 20);
 
-  return { items };
+  return {
+    items,
+    source: googleSpotIds.size > 0 ? "google_places" as const : "demo_fallback" as const
+  };
 };

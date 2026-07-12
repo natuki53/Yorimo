@@ -13,7 +13,7 @@ describe("Yorimo API", () => {
     });
   });
 
-  it("returns validation errors with unified error response", async () => {
+  it("keeps public registration validation available in demo mode", async () => {
     const response = await request(app).post("/api/auth/register").send({
       name: "",
       email: "not-an-email",

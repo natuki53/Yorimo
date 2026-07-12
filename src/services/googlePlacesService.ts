@@ -82,6 +82,13 @@ const stationFieldMask = [
   "places.types"
 ].join(",");
 const stationTypes = ["train_station", "subway_station", "transit_station", "light_rail_station"];
+const demoStations: StationCandidate[] = [
+  { id: "demo-station-tokyo", name: "東京駅", address: "東京都千代田区丸の内", lat: 35.681236, lng: 139.767125, primaryType: "train_station", types: ["train_station", "transit_station"] },
+  { id: "demo-station-kanda", name: "神田駅", address: "東京都千代田区鍛冶町", lat: 35.69169, lng: 139.770883, primaryType: "train_station", types: ["train_station", "transit_station"] },
+  { id: "demo-station-ochanomizu", name: "御茶ノ水駅", address: "東京都千代田区神田駿河台", lat: 35.699605, lng: 139.765164, primaryType: "train_station", types: ["train_station", "transit_station"] },
+  { id: "demo-station-yotsuya", name: "四ツ谷駅", address: "東京都新宿区四谷", lat: 35.686014, lng: 139.730667, primaryType: "train_station", types: ["train_station", "transit_station"] },
+  { id: "demo-station-shinjuku", name: "新宿駅", address: "東京都新宿区新宿", lat: 35.689606, lng: 139.700571, primaryType: "train_station", types: ["train_station", "transit_station"] }
+];
 
 const typeLabels: Record<string, string> = {
   amusement_park: "レジャー",
@@ -151,6 +158,16 @@ const normalizePlaceName = (value: string) =>
     .replace(/[()（）]/g, "")
     .replace(/駅$/, "")
     .toLocaleLowerCase("ja-JP");
+
+const searchDemoStations = (keyword: string, limit: number) => {
+  const normalized = normalizePlaceName(keyword);
+  return demoStations
+    .filter((station) => {
+      const stationName = normalizePlaceName(station.name);
+      return stationName.includes(normalized) || normalized.includes(stationName);
+    })
+    .slice(0, Math.max(1, Math.min(limit, 8)));
+};
 
 const pickCategory = (place: GooglePlace) => {
   const display = place.primaryTypeDisplayName?.text?.trim();
@@ -290,7 +307,8 @@ export const getPlacePhotoUri = async (photoName: string, maxWidthPx = 720) => {
         key: env.GOOGLE_MAPS_SERVER_API_KEY!,
         maxWidthPx: String(Math.max(1, Math.min(1600, maxWidthPx))),
         skipHttpRedirect: "true"
-      }).toString()}`
+      }).toString()}`,
+      { signal: AbortSignal.timeout(2500) }
     );
 
     if (!response.ok) {
@@ -333,7 +351,8 @@ export const syncNearbyPlaces = async ({ lat, lng, radiusKm, limit = 20 }: Nearb
         maxResultCount: Math.max(1, Math.min(20, limit)),
         rankPreference: "POPULARITY",
         regionCode: "JP"
-      })
+      }),
+      signal: AbortSignal.timeout(5000)
     });
 
     if (!response.ok) {
@@ -397,8 +416,11 @@ export const searchStations = async ({
   limit = 8
 }: StationSearchInput): Promise<StationCandidate[]> => {
   const textQuery = keyword.trim();
-  if (!isConfigured() || textQuery.length < 1) {
+  if (textQuery.length < 1) {
     return [];
+  }
+  if (!isConfigured()) {
+    return searchDemoStations(textQuery, limit);
   }
 
   try {
@@ -447,7 +469,8 @@ export const searchStations = async ({
           regionCode: "JP",
           strictTypeFiltering: Boolean(includedType),
           textQuery: query
-        })
+        }),
+        signal: AbortSignal.timeout(2500)
       });
 
       if (!response.ok) {
@@ -470,11 +493,12 @@ export const searchStations = async ({
       }
     }
 
-    return candidates
+    const results = candidates
       .sort((a, b) => scoreStationCandidate(a, textQuery) - scoreStationCandidate(b, textQuery))
       .slice(0, maxResultCount);
+    return results.length > 0 ? results : searchDemoStations(textQuery, maxResultCount);
   } catch (error) {
     warnPlaces("Station Text Search request failed", error);
-    return [];
+    return searchDemoStations(textQuery, limit);
   }
 };

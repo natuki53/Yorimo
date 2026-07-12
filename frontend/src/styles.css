@@ -395,25 +395,43 @@ body {
   display: flex;
   gap: 12px;
   left: 18px;
-  max-width: 420px;
+  max-width: min(420px, calc(100% - 36px));
   padding: 12px;
   position: absolute;
+  z-index: 2;
 }
 
-.desktop-map-summary strong,
-.desktop-map-summary span {
+.desktop-map-summary > div {
+  min-width: 0;
+}
+
+.desktop-map-summary > div strong,
+.desktop-map-summary > div span {
   display: block;
 }
 
-.desktop-map-summary strong {
+.desktop-map-summary > div strong {
   font-family: var(--font-display);
   font-size: 17px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.desktop-map-summary span {
+.desktop-map-summary > div span {
   color: var(--color-muted);
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.35;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop-map-summary .score {
+  flex: 0 0 auto;
 }
 
 .mini-score {
@@ -922,7 +940,10 @@ button.app-chip {
 }
 
 .sheet[data-level="expanded"] {
-  max-height: calc(100dvh - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 8px);
+  /* Keep the drag handle below the route summary (12px top + 52px card + 12px gap). */
+  max-height: calc(
+    100dvh - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 76px
+  );
   overflow-y: auto;
   transform: translateY(0);
 }
@@ -2006,13 +2027,13 @@ button.app-chip {
     radial-gradient(ellipse 55% 45% at 8% 88%, rgb(232 240 254 / 80%), transparent 52%),
     radial-gradient(ellipse 40% 35% at 52% 48%, rgb(255 247 237 / 70%), transparent 60%),
     linear-gradient(160deg, #fffefe 0%, #faf7fb 42%, #f5f8fd 100%);
-  column-gap: clamp(30px, 4vw, 64px);
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 460px);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   isolation: isolate;
+  justify-items: center;
   overflow: visible;
   overflow-x: clip;
-  padding: 18px clamp(24px, 5vw, 72px) 28px;
+  padding: 18px clamp(24px, 5vw, 72px) 36px;
   position: relative;
 }
 
@@ -2127,26 +2148,32 @@ button.app-chip {
   min-height: 42px;
   padding: 0 16px;
   text-decoration: none;
-  transition: background 180ms ease, transform 180ms ease;
+  transition: background 180ms ease, box-shadow 220ms ease, transform 180ms ease;
 }
 
 .landing-header-actions a:hover,
-.landing-header-actions button:hover {
+.landing-header-actions button:hover:not(.landing-header-primary) {
   background: rgb(15 20 25 / 5%);
 }
 
-.landing-header-actions .landing-header-primary {
+.landing-header-actions .landing-header-primary,
+.landing-header > .landing-header-primary {
   background: var(--gradient-social);
-  background-size: 140% 140%;
   box-shadow: 0 10px 24px rgb(225 48 108 / 22%);
   color: white;
-  transition: background-position 280ms ease, box-shadow 220ms ease, transform 180ms ease;
+  justify-self: end;
 }
 
-.landing-header-actions .landing-header-primary:hover {
-  background-position: 100% 0;
+.landing-header-actions .landing-header-primary:hover:not(:disabled),
+.landing-header > .landing-header-primary:hover:not(:disabled) {
   box-shadow: 0 14px 28px rgb(225 48 108 / 30%);
+  filter: brightness(1.05);
   transform: translateY(-1px);
+}
+
+.landing-header-primary:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .landing-gate .auth-hero {
@@ -2156,14 +2183,16 @@ button.app-chip {
   border-radius: 0;
   box-shadow: none;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 28px clamp(28px, 4vw, 56px);
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
   grid-template-rows: auto auto;
-  gap: 28px clamp(24px, 3vw, 40px);
   height: auto;
-  min-height: 620px;
+  max-width: 1180px;
+  min-height: 560px;
   overflow: visible;
-  padding: clamp(36px, 5vw, 72px) 0 clamp(28px, 4vw, 58px);
+  padding: clamp(28px, 4vw, 56px) 0 clamp(20px, 3vw, 36px);
   position: relative;
+  width: 100%;
   z-index: 2;
 }
 
@@ -2246,6 +2275,31 @@ button.app-chip {
   transition: transform 180ms ease, box-shadow 220ms ease, background 180ms ease;
 }
 
+.landing-account-action {
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid rgb(15 20 25 / 14%);
+  border-radius: 15px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 48px;
+  padding: 0 18px;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.landing-account-action:hover:not(:disabled) {
+  background: white;
+  border-color: rgb(225 48 108 / 28%);
+  transform: translateY(-1px);
+}
+
+.landing-account-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .landing-main-action svg {
   transition: transform 220ms ease;
 }
@@ -2266,53 +2320,85 @@ button.app-chip {
   font-weight: 800;
 }
 
+.landing-demo-note {
+  color: #7a3a52;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  max-width: 520px;
+}
+
+.landing-main-action:disabled {
+  cursor: wait;
+  opacity: 0.78;
+  transform: none;
+}
+
 .landing-benefits {
+  border-top: 1px solid rgb(15 20 25 / 8%);
   display: grid;
-  gap: 0;
-  grid-column: 1;
+  gap: 20px;
+  grid-column: 1 / -1;
   grid-row: 2;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   list-style: none;
-  margin: 0;
-  padding: 0;
-  width: min(560px, 100%);
+  margin: 8px 0 0;
+  padding: 28px 0 0;
+  width: 100%;
 }
 
 .landing-benefits > li {
   align-items: flex-start;
-  color: var(--color-brand);
-  display: flex;
-  gap: 10px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
   min-width: 0;
-  padding: 4px 16px 4px 0;
-  position: relative;
+  padding: 0;
 }
 
 .landing-benefits > li + li {
   border-left: 1px solid rgb(15 20 25 / 8%);
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
-.landing-benefits > li svg {
+.landing-benefits > li:not(:last-child) {
+  padding-right: 20px;
+}
+
+.landing-benefit-icon {
+  align-items: center;
+  background: rgb(253 231 240 / 72%);
+  border-radius: 12px;
+  color: var(--color-brand);
+  display: inline-flex;
   flex-shrink: 0;
-  margin-top: 2px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
 }
 
-.landing-benefits span,
+.landing-benefits > li > span:last-child,
 .landing-benefits strong {
   display: block;
+  min-width: 0;
 }
 
-.landing-benefits span {
+.landing-benefits > li > span:last-child {
   color: #7d8795;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding-top: 2px;
 }
 
 .landing-benefits strong {
-  color: #344054;
-  font-size: 12px;
-  margin-bottom: 3px;
+  color: #1d2939;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
 }
 
 .landing-gate .auth-preview {
@@ -2332,8 +2418,8 @@ button.app-chip {
     0 30px 80px rgb(58 72 98 / 18%),
     0 0 0 1px rgb(255 255 255 / 80%) inset;
   grid-column: 2;
-  grid-row: 1 / -1;
-  height: auto;
+  grid-row: 1;
+  height: 100%;
   min-height: 420px;
   opacity: 1;
   overflow: hidden;
@@ -2459,6 +2545,36 @@ button.app-chip {
   font-size: 13px;
 }
 
+.landing-feed-chip {
+  align-items: center;
+  animation: landing-rise 650ms cubic-bezier(0.22, 1, 0.36, 1) 1280ms both;
+  backdrop-filter: blur(10px);
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid white;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 12%);
+  color: #475467;
+  display: flex;
+  font-size: 10px;
+  font-weight: 800;
+  gap: 6px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 8px 11px;
+  position: absolute;
+  top: 64px;
+  z-index: 4;
+}
+
+.landing-feed-chip span {
+  color: var(--color-brand);
+}
+
+.landing-feed-chip svg {
+  color: var(--color-brand);
+  flex-shrink: 0;
+}
+
 .landing-spot-card {
   align-items: center;
   animation: landing-spot-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 1500ms both;
@@ -2480,15 +2596,21 @@ button.app-chip {
   z-index: 4;
 }
 
+.landing-spot-thumb,
+.landing-spot-icon {
+  border-radius: 13px;
+  flex-shrink: 0;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
 .landing-spot-icon {
   align-items: center;
   background: var(--gradient-social);
-  border-radius: 13px;
   color: white;
   display: flex;
-  height: 44px;
   justify-content: center;
-  width: 44px;
 }
 
 .landing-spot-card span,
@@ -2525,39 +2647,6 @@ button.app-chip {
   gap: 4px;
   min-width: 0;
   overflow: hidden;
-}
-
-.landing-auth-card {
-  animation: landing-rise 850ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
-  backdrop-filter: blur(18px);
-  background: rgb(255 255 255 / 86%);
-  border-color: rgb(255 255 255 / 95%);
-  border-radius: 26px;
-  box-shadow: 0 28px 75px rgb(63 50 79 / 15%);
-  justify-self: end;
-  max-width: 460px;
-  padding: 28px;
-  position: relative;
-  z-index: 3;
-}
-
-.landing-auth-card::before {
-  background: var(--gradient-social);
-  border-radius: 999px;
-  content: "";
-  height: 4px;
-  left: 28px;
-  position: absolute;
-  top: 0;
-  width: 76px;
-}
-
-.landing-auth-card .auth-card-head h2 {
-  font-size: 36px;
-}
-
-.landing-auth-card .auth-tabs {
-  background: rgb(241 245 249 / 74%);
 }
 
 @keyframes landing-rise {
@@ -3370,7 +3459,7 @@ button.app-chip {
   }
 
   .landing-gate {
-    grid-template-columns: minmax(0, 820px);
+    grid-template-columns: minmax(0, 1fr);
     justify-content: center;
     overflow: visible;
     overflow-x: clip;
@@ -3386,9 +3475,9 @@ button.app-chip {
 
   .landing-gate .auth-hero {
     gap: 24px;
-    grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
-    min-height: 500px;
-    padding: 46px 0 36px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
+    min-height: 480px;
+    padding: 36px 0 28px;
   }
 
   .landing-gate .auth-copy {
@@ -3396,22 +3485,16 @@ button.app-chip {
   }
 
   .landing-gate .auth-copy h1 {
-    font-size: clamp(46px, 6vw, 58px);
+    font-size: clamp(42px, 5.5vw, 56px);
   }
 
   .landing-gate .auth-preview {
     display: block;
-    min-height: 360px;
+    min-height: 340px;
   }
 
   .landing-benefits {
     margin-top: 0;
-  }
-
-  .landing-auth-card {
-    justify-self: stretch;
-    margin-bottom: 24px;
-    max-width: none;
   }
 }
 
@@ -3445,11 +3528,11 @@ button.app-chip {
   }
 
   .landing-brand .brand-subtitle,
-  .landing-nav,
-  .landing-header-actions > :first-child {
+  .landing-nav {
     display: none;
   }
 
+  .landing-header-primary,
   .landing-header-actions a,
   .landing-header-actions button {
     min-height: 40px;
@@ -3466,11 +3549,13 @@ button.app-chip {
     gap: 0;
     grid-template-columns: none;
     min-height: 0;
-    padding: 42px 20px 28px;
+    padding: 28px 16px 24px;
+    width: 100%;
   }
 
   .landing-gate .auth-copy {
-    max-width: 700px;
+    max-width: none;
+    width: 100%;
   }
 
   .landing-brand-signal {
@@ -3479,17 +3564,44 @@ button.app-chip {
   }
 
   .landing-gate .auth-copy h1 {
-    font-size: clamp(42px, 9vw, 58px);
+    font-size: clamp(40px, 9vw, 54px);
+  }
+
+  .landing-gate .auth-copy h1 > em {
+    white-space: normal;
   }
 
   .landing-gate .auth-copy > p {
     font-size: 15px;
     line-height: 1.7;
-    margin-top: 18px;
+    margin-top: 16px;
+    max-width: none;
   }
 
   .landing-hero-actions {
+    align-items: stretch;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr;
     margin-top: 22px;
+  }
+
+  .landing-main-action,
+  .landing-account-action {
+    justify-content: center;
+    min-height: 48px;
+    width: 100%;
+  }
+
+  .landing-hero-actions > span {
+    flex-basis: auto;
+    order: 3;
+    text-align: center;
+  }
+
+  .landing-demo-note {
+    margin-top: 14px;
+    max-width: none;
   }
 
   .landing-gate .auth-preview {
@@ -3497,34 +3609,69 @@ button.app-chip {
     display: block;
     grid-column: auto;
     grid-row: auto;
-    height: min(320px, 58vw);
-    margin-top: 28px;
+    height: 340px;
+    margin-top: 24px;
     min-height: 0;
     position: relative;
     right: auto;
     width: 100%;
   }
 
+  .landing-map-label {
+    font-size: 10px;
+    left: 12px;
+    padding: 8px 10px;
+    top: 12px;
+  }
+
+  .landing-feed-chip {
+    font-size: 9px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 7px 10px;
+    top: 52px;
+  }
+
+  .landing-detour-badge {
+    bottom: 92px;
+    font-size: 9px;
+    padding: 8px 10px;
+    right: 12px;
+  }
+
+  .landing-spot-card {
+    bottom: 12px;
+    left: 12px;
+    max-width: none;
+    padding: 10px;
+    right: 12px;
+  }
+
   .landing-benefits {
+    border-top: 1px solid rgb(15 20 25 / 8%);
     grid-column: auto;
     grid-row: auto;
     margin-top: 28px;
+    padding-top: 22px;
     width: 100%;
-  }
-
-  .landing-auth-card {
-    justify-self: stretch;
-    max-width: none;
   }
 }
 
 @media (max-width: 560px) {
+  .landing-gate {
+    padding: 10px;
+  }
+
   .landing-gate .auth-hero {
-    padding: 34px 8px 18px;
+    padding: 24px 12px 20px;
   }
 
   .landing-gate .auth-copy h1 {
-    font-size: clamp(39px, 11.5vw, 50px);
+    font-size: clamp(36px, 10vw, 46px);
+  }
+
+  .landing-gate .auth-copy h1 > em {
+    white-space: normal;
   }
 
   .landing-gate .auth-copy > p {
@@ -3532,50 +3679,58 @@ button.app-chip {
   }
 
   .landing-gate .auth-preview {
-    height: 280px;
-    margin-top: 22px;
+    height: 300px;
+    margin-top: 20px;
   }
 
   .landing-gate .auth-pin {
-    height: 38px;
-    width: 38px;
+    height: 36px;
+    width: 36px;
+  }
+
+  .landing-gate .auth-pin.one {
+    left: 12%;
+    top: 62%;
+  }
+
+  .landing-gate .auth-pin.two {
+    left: 40%;
+    top: 34%;
+  }
+
+  .landing-feed-chip {
+    display: none;
+  }
+
+  .landing-detour-badge {
+    bottom: 88px;
   }
 
   .landing-benefits {
-    gap: 12px;
+    gap: 14px;
     grid-template-columns: 1fr;
   }
 
-  .landing-benefits > li {
+  .landing-benefits > li,
+  .landing-benefits > li:not(:last-child) {
     padding: 0;
   }
 
   .landing-benefits > li + li {
     border-left: 0;
     border-top: 1px solid rgb(15 20 25 / 8%);
-    padding: 12px 0 0;
+    padding: 14px 0 0;
   }
 
-  .landing-benefits span {
-    font-size: 12px;
+  .landing-benefits > li > span:last-child {
+    font-size: 13px;
   }
 
   .landing-benefits strong {
-    display: inline;
-    font-size: 13px;
-    margin-right: 8px;
-  }
-
-  .landing-hero-actions > span {
-    flex-basis: 100%;
-  }
-
-  .landing-auth-card {
-    padding: 20px;
-  }
-
-  .landing-auth-card::before {
-    left: 20px;
+    display: block;
+    font-size: 15px;
+    margin-bottom: 2px;
+    margin-right: 0;
   }
 }
 
@@ -3588,4 +3743,135 @@ button.app-chip {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.shared-demo-note {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent, #ff6b4a) 9%, white);
+  border: 1px solid color-mix(in srgb, var(--accent, #ff6b4a) 28%, transparent);
+  border-radius: 14px;
+  color: #714235;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  line-height: 1.55;
+  margin: 14px 0;
+  padding: 11px 13px;
+}
+
+.read-only-profile {
+  background: #fffaf6;
+  border: 1px solid #f0e4dc;
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.read-only-profile > div {
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.read-only-profile span,
+.read-only-profile small {
+  color: var(--muted, #786d67);
+}
+
+.protected-route-badge {
+  align-self: center;
+  background: #f1eee9;
+  border-radius: 999px;
+  color: #625b55;
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 8px;
+  padding: 6px 9px;
+}
+
+.fallback-map {
+  background-color: #f4efe8;
+  background-image: radial-gradient(circle at 25% 30%, rgba(255,255,255,.9), transparent 25%), linear-gradient(145deg, rgba(207,221,204,.8), transparent 48%);
+  height: 100%;
+  min-height: 360px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.fallback-map-canvas {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.fallback-road {
+  fill: none;
+  stroke: rgba(255,255,255,.95);
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.fallback-route {
+  fill: none;
+  stroke: #ff6b4a;
+  stroke-dasharray: 3 2;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.fallback-map-notice {
+  background: rgba(255,255,255,.9);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(57,42,33,.1);
+  color: #6e625a;
+  font-size: 11px;
+  font-weight: 700;
+  left: 14px;
+  padding: 7px 10px;
+  position: absolute;
+  top: 14px;
+  z-index: 3;
+}
+
+.fallback-current {
+  background: #4285f4;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 7px rgba(66,133,244,.16);
+  height: 14px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  z-index: 2;
+}
+
+.fallback-marker {
+  align-items: center;
+  background: #fff;
+  border: 2px solid #ff6b4a;
+  border-radius: 50% 50% 50% 12%;
+  box-shadow: 0 5px 12px rgba(73,46,35,.2);
+  color: #a33d29;
+  cursor: pointer;
+  display: flex;
+  font-size: 11px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  position: absolute;
+  transform: translate(-50%, -80%);
+  width: 32px;
+  z-index: 2;
+}
+
+.fallback-marker.selected {
+  background: #ff6b4a;
+  color: white;
+  height: 38px;
+  width: 38px;
+  z-index: 4;
 }

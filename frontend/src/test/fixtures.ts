@@ -8,6 +8,7 @@ export const tokyoStation = {
 export const fixtureRoutes: Route[] = [
   {
     id: "route-central-line",
+    isProtected: true,
     name: "学校帰り",
     startType: "station",
     startName: "東京駅",

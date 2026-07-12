@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError } from "./api";
+import { api, ApiError, resolveMediaUrl } from "./api";
 
 const jsonResponse = (body: unknown, init?: ResponseInit) =>
   new Response(JSON.stringify(body), {
@@ -15,6 +15,11 @@ describe("api client", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps bundled demo assets on the frontend origin", () => {
+    expect(resolveMediaUrl("/demo-assets/book-cafe.svg")).toBe("/demo-assets/book-cafe.svg");
+    expect(resolveMediaUrl("/api/place-photos/example")).toBe("http://localhost:4000/api/place-photos/example");
   });
 
   it("unwraps successful API responses", async () => {

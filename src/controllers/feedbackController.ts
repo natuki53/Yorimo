@@ -1,9 +1,17 @@
 import type { Request, Response } from "express";
 import { prisma } from "../utils/prisma.js";
-import { notFound } from "../utils/errors.js";
+import { demoCapReached, notFound } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
+import { DEMO_LIMITS, isDemoUser } from "../config/demo.js";
 
 export const createFeedback = async (req: Request, res: Response) => {
+  if (isDemoUser(req.user?.id)) {
+    const count = await prisma.feedback.count({ where: { userId: req.user!.id } });
+    if (count >= DEMO_LIMITS.feedbacks) {
+      throw demoCapReached("共有デモの操作履歴上限に達しました");
+    }
+  }
+
   const spot = await prisma.spot.findUnique({ where: { id: req.body.spotId } });
   if (!spot) {
     throw notFound("スポットが見つかりません");

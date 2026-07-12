@@ -1,8 +1,18 @@
 import type { Request, Response } from "express";
 import { prisma } from "../utils/prisma.js";
-import { conflict, unauthorized } from "../utils/errors.js";
+import { conflict, demoDataLocked, demoNotReady, unauthorized } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { createAccessToken, hashPassword, toPublicUser, verifyPassword } from "../services/authService.js";
+import { DEMO_USER_ID, isDemoUser } from "../config/demo.js";
+
+export const demoLogin = async (_req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({ where: { id: DEMO_USER_ID } });
+  if (!user) {
+    throw demoNotReady();
+  }
+
+  return sendSuccess(res, { user: toPublicUser(user), token: createAccessToken(user) });
+};
 
 export const register = async (req: Request, res: Response) => {
   const existingUser = await prisma.user.findUnique({
@@ -59,6 +69,10 @@ export const getMe = async (req: Request, res: Response) => {
 };
 
 export const updateProfile = async (req: Request, res: Response) => {
+  if (isDemoUser(req.user?.id)) {
+    throw demoDataLocked("共有デモのプロフィールは読み取り専用です");
+  }
+
   const user = await prisma.user.update({
     where: { id: req.user!.id },
     data: {

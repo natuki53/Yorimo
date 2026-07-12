@@ -44,6 +44,7 @@ export type ProfileUpdatePayload = {
 
 export type Route = {
   id: string;
+  isProtected?: boolean;
   userId?: string;
   name: string;
   startType: RouteEndpointType;
@@ -148,6 +149,7 @@ export type RecommendationItem = {
 
 export type RecommendationsPayload = {
   items: RecommendationItem[];
+  source: "google_places" | "demo_fallback";
 };
 
 export type RecommendationRequest = {

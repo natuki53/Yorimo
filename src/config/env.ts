@@ -19,6 +19,10 @@ const parseCorsOrigins = (value?: string): string[] => {
 };
 
 const nodeEnv = process.env.NODE_ENV ?? "development";
+const parseBoolean = (value: string | undefined, fallback = false) => {
+  if (value == null) return fallback;
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+};
 const jwtSecret = process.env.JWT_SECRET ?? (nodeEnv === "production" ? undefined : "dev-only-change-me");
 
 if (!jwtSecret) {
@@ -31,7 +35,10 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL,
   GOOGLE_MAPS_SERVER_API_KEY:
     process.env.GOOGLE_MAPS_SERVER_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY,
+  DEMO_MODE: parseBoolean(process.env.DEMO_MODE, nodeEnv !== "production"),
+  ALLOW_DEMO_RESET: parseBoolean(process.env.ALLOW_DEMO_RESET),
   JWT_SECRET: jwtSecret,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "7d",
+  JWT_EXPIRES_IN:
+    process.env.JWT_EXPIRES_IN ?? (parseBoolean(process.env.DEMO_MODE, nodeEnv !== "production") ? "8h" : "7d"),
   CORS_ORIGINS: parseCorsOrigins(process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)
 };

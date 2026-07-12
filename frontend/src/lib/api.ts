@@ -27,7 +27,7 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export const resolveMediaUrl = (url?: string | null) => {
   if (!url) {
@@ -35,6 +35,12 @@ export const resolveMediaUrl = (url?: string | null) => {
   }
 
   if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+
+  // Prototype assets are served by Vite in development and by Express in production.
+  // They must not be prefixed with the development API origin.
+  if (url.startsWith("/demo-assets/")) {
     return url;
   }
 
@@ -85,6 +91,10 @@ const request = async <T>(path: string, options: RequestOptions = {}): Promise<T
 
 export const api = {
   baseUrl: API_BASE_URL,
+
+  demoLogin() {
+    return request<AuthPayload>("/api/auth/demo", { method: "POST" });
+  },
 
   login(email: string, password: string) {
     return request<AuthPayload>("/api/auth/login", {

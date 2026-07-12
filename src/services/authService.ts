@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import type { User } from "@prisma/client";
 import { env } from "../config/env.js";
@@ -16,6 +17,7 @@ export const verifyPassword = async (password: string, passwordHash: string) => 
 export const createAccessToken = (user: Pick<User, "id" | "email">) => {
   const options: SignOptions = {
     subject: user.id,
+    jwtid: randomUUID(),
     expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"]
   };
 

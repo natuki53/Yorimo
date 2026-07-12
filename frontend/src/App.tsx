@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AccountSetup } from "./components/AccountSetup";
 import { AuthGate, type AuthMode, type AuthSubmitPayload } from "./components/AuthDialog";
 import { tabToPath, type AppTab } from "./components/BottomNav";
 import { DesktopLayout } from "./components/DesktopLayout";
 import { MobileLayout } from "./components/MobileLayout";
-import { api } from "./lib/api";
+import { api, ApiError } from "./lib/api";
 import type {
   FeedbackAction,
   Post,
@@ -21,6 +20,16 @@ import type {
 const tokenStorageKey = "yorimo.accessToken";
 const desktopQuery = "(min-width: 900px)";
 const defaultMapCenter = { lat: 35.681236, lng: 139.767125 };
+
+const mutationErrorMessage = (error: unknown, fallback: string) => {
+  if (!(error instanceof ApiError)) return fallback;
+  if (error.code === "DEMO_CAP_REACHED") return "共有デモの保存上限に達しました。管理者のリセット後に再度お試しください。";
+  if (error.code === "RATE_LIMITED") return "操作が集中しています。少し待ってから再度お試しください。";
+  if (error.code === "DEMO_DATA_LOCKED") return "この項目はデモの基準データのため変更できません。";
+  if (error.code === "PROTOTYPE_RESTRICTION") return "公開デモではこの操作を利用できません。";
+  if (error.code === "UNAUTHORIZED") return "セッションの有効期限が切れました。もう一度デモを開始してください。";
+  return fallback;
+};
 
 const routeStartLocation = (route: Route) => ({ lat: route.startLat, lng: route.startLng });
 
@@ -89,12 +98,8 @@ function App() {
     if (typeof window === "undefined") return "map";
     return pathToTab(window.location.pathname);
   });
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [accountSetupOpen, setAccountSetupOpen] = useState(false);
-  const [accountSetupError, setAccountSetupError] = useState<string | null>(null);
-  const [accountSetupSubmitting, setAccountSetupSubmitting] = useState(false);
   const [sessionChecking, setSessionChecking] = useState(() => Boolean(getStoredToken()));
   const [detailOpen, setDetailOpen] = useState(false);
   const [token, setToken] = useState<string | null>(() => getStoredToken());
@@ -310,9 +315,8 @@ function App() {
     };
   }, [token]);
 
-  const handleAuthOpen = (mode: AuthMode = "login") => {
+  const handleAuthOpen = () => {
     setAuthError(null);
-    setAuthMode(mode);
   };
 
   const handleAuthSubmit = async (mode: AuthMode, payload: AuthSubmitPayload) => {
@@ -330,17 +334,37 @@ function App() {
       saveToken(result.token);
       setToken(result.token);
       setUser(result.user);
-      setAccountSetupOpen(mode === "register");
-      setAccountSetupError(null);
-      setRouteDataReady(mode === "register");
-      setSessionChecking(mode === "login");
+      setRouteDataReady(false);
+      setSessionChecking(true);
       setApiMessage(null);
     } catch (error) {
-      setAuthError(
-        mode === "login"
-          ? "ログインできませんでした。メールアドレスとパスワードを確認してください。"
-          : "アカウントを作成できませんでした。入力内容を確認してください。"
-      );
+      if (error instanceof ApiError && error.code === "CONFLICT") {
+        setAuthError("このメールアドレスはすでに登録されています。");
+      } else {
+        setAuthError(
+          mode === "login"
+            ? "ログインできませんでした。メールアドレスとパスワードを確認してください。"
+            : "アカウントを作成できませんでした。入力内容を確認してください。"
+        );
+      }
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleDemoStart = async () => {
+    setAuthSubmitting(true);
+    setAuthError(null);
+    try {
+      const result = await api.demoLogin();
+      saveToken(result.token);
+      setToken(result.token);
+      setUser(result.user);
+      setRouteDataReady(false);
+      setSessionChecking(true);
+      setApiMessage(null);
+    } catch {
+      setAuthError("デモを開始できませんでした。少し待ってから、もう一度お試しください。");
     } finally {
       setAuthSubmitting(false);
     }
@@ -350,8 +374,6 @@ function App() {
     saveToken(null);
     setToken(null);
     setUser(null);
-    setAccountSetupOpen(false);
-    setAccountSetupError(null);
     setSessionChecking(false);
     setRoutes([]);
     setSelectedRouteId(null);
@@ -399,7 +421,7 @@ function App() {
 
     if (!token) {
       setApiMessage("保存や訪問記録にはログインが必要です。");
-      handleAuthOpen("login");
+      handleAuthOpen();
       return;
     }
 
@@ -419,8 +441,8 @@ function App() {
         void refreshUserCollections(token);
       }
       setApiMessage(successMessage);
-    } catch {
-      setApiMessage("操作を完了できませんでした。時間をおいてもう一度お試しください。");
+    } catch (error) {
+      setApiMessage(mutationErrorMessage(error, "操作を完了できませんでした。時間をおいてもう一度お試しください。"));
     } finally {
       setLoading(false);
     }
@@ -430,30 +452,6 @@ function App() {
     setActiveTags((current) =>
       current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
     );
-  };
-
-  const handleAccountSetupSubmit = async (payload: ProfileUpdatePayload) => {
-    if (!token) {
-      setAccountSetupError("セッションを確認できませんでした。再度ログインしてください。");
-      return;
-    }
-
-    setAccountSetupSubmitting(true);
-    setAccountSetupError(null);
-    try {
-      const updatedUser = await api.updateProfile(token, payload);
-      setUser(updatedUser);
-      setActiveTags(updatedUser.interests.length > 0 ? updatedUser.interests : activeTags);
-      if (updatedUser.defaultBudgetMax != null) {
-        setBudgetMax(updatedUser.defaultBudgetMax);
-      }
-      setAccountSetupOpen(false);
-      setApiMessage(null);
-    } catch {
-      setAccountSetupError("プロフィールを保存できませんでした。入力内容を確認してください。");
-    } finally {
-      setAccountSetupSubmitting(false);
-    }
   };
 
   const handleProfileUpdate = async (payload: ProfileUpdatePayload) => {
@@ -487,17 +485,14 @@ function App() {
 
     setLoading(true);
     try {
-      const existingRoute = routes.find((route) => route.name === payload.name);
-      const savedRoute = existingRoute
-        ? await api.updateRoute(token, existingRoute.id, payload)
-        : await api.createRoute(token, payload);
+      const savedRoute = await api.createRoute(token, payload);
       const nextRoutes = [savedRoute, ...routes.filter((route) => route.id !== savedRoute.id)];
       setRoutes(nextRoutes);
       setSelectedRouteId(savedRoute.id);
-      setApiMessage(existingRoute ? "マイルートを更新しました。" : "マイルートを保存しました。");
+      setApiMessage("マイルートを保存しました。共有デモの参加者にも表示されます。");
       await refreshRecommendations(token, nextRoutes, savedRoute.id);
-    } catch {
-      setApiMessage("マイルートを保存できませんでした。駅指定を確認してください。");
+    } catch (error) {
+      setApiMessage(mutationErrorMessage(error, "マイルートを保存できませんでした。駅指定を確認してください。"));
       throw new Error("Route save failed");
     } finally {
       setLoading(false);
@@ -519,8 +514,8 @@ function App() {
       setSelectedRouteId(nextSelectedRouteId);
       setApiMessage("マイルートを削除しました。");
       await refreshRecommendations(token, nextRoutes, nextSelectedRouteId);
-    } catch {
-      setApiMessage("マイルートを削除できませんでした。");
+    } catch (error) {
+      setApiMessage(mutationErrorMessage(error, "マイルートを削除できませんでした。"));
     } finally {
       setLoading(false);
     }
@@ -542,10 +537,10 @@ function App() {
     try {
       const created = await api.createPost(token, payload);
       setFeedPosts((current) => [created, ...current]);
-      setApiMessage(payload.type === "short_video" ? "リールを投稿しました。" : "投稿を作成しました。");
+      setApiMessage("口コミを投稿しました。共有フィードに反映されています。");
       await refreshUserCollections(token);
-    } catch {
-      setApiMessage("投稿を作成できませんでした。スポット、URL、公開範囲を確認してください。");
+    } catch (error) {
+      setApiMessage(mutationErrorMessage(error, "口コミを投稿できませんでした。入力内容を確認してください。"));
     } finally {
       setLoading(false);
     }
@@ -562,8 +557,8 @@ function App() {
       await api.deleteSavedSpot(token, spotId);
       setSavedSpots((current) => current.filter((item) => item.spotId !== spotId));
       setApiMessage("保存を解除しました。");
-    } catch {
-      setApiMessage("保存を解除できませんでした。");
+    } catch (error) {
+      setApiMessage(mutationErrorMessage(error, "保存を解除できませんでした。"));
     } finally {
       setLoading(false);
     }
@@ -627,24 +622,9 @@ function App() {
       <AuthGate
         error={authError}
         loading={authSubmitting || sessionChecking}
-        mode={authMode}
-        onModeChange={(mode) => {
-          setAuthError(null);
-          setAuthMode(mode);
-        }}
+        onStart={handleDemoStart}
         onSubmit={handleAuthSubmit}
         statusMessage={sessionChecking ? "セッションを確認しています。" : apiMessage}
-      />
-    );
-  }
-
-  if (accountSetupOpen) {
-    return (
-      <AccountSetup
-        error={accountSetupError}
-        loading={accountSetupSubmitting}
-        onSubmit={handleAccountSetupSubmit}
-        user={user}
       />
     );
   }
@@ -654,11 +634,7 @@ function App() {
       <AuthGate
         error={authError}
         loading
-        mode={authMode}
-        onModeChange={(mode) => {
-          setAuthError(null);
-          setAuthMode(mode);
-        }}
+        onStart={handleDemoStart}
         onSubmit={handleAuthSubmit}
         statusMessage="ルート情報を読み込んでいます。"
       />

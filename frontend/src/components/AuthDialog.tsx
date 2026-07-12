@@ -1,5 +1,16 @@
-import { FormEvent, useRef, useState } from "react";
-import { ArrowRight, Clock3, Coffee, LogIn, MapPin, Navigation, Sparkles, UserPlus, X } from "lucide-react";
+import { FormEvent, useState } from "react";
+import {
+  ArrowRight,
+  Clock3,
+  LogIn,
+  Map,
+  MapPin,
+  MessageCircle,
+  Navigation,
+  Route,
+  UserPlus,
+  X
+} from "lucide-react";
 import { BrandMark } from "./BrandMark";
 
 export type AuthMode = "login" | "register";
@@ -10,14 +21,12 @@ export type AuthSubmitPayload = {
   password: string;
 };
 
-type Props = {
+type AuthGateProps = {
   error?: string | null;
   loading: boolean;
-  mode: AuthMode;
-  open: boolean;
-  onClose: () => void;
-  onModeChange: (mode: AuthMode) => void;
+  onStart: () => void;
   onSubmit: (mode: AuthMode, payload: AuthSubmitPayload) => void;
+  statusMessage?: string | null;
 };
 
 type AuthFormProps = {
@@ -32,14 +41,12 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-
   const isRegister = mode === "register";
-  const title = isRegister ? "アカウント作成" : "ログイン";
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit(mode, {
-      email,
+      email: email.trim(),
       name: isRegister ? name.trim() : undefined,
       password
     });
@@ -49,8 +56,10 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
     <>
       <div className="auth-tabs" role="tablist" aria-label="認証方法">
         <button
+          aria-selected={mode === "login"}
           className="auth-tab"
           data-active={mode === "login"}
+          disabled={loading}
           onClick={() => onModeChange("login")}
           role="tab"
           type="button"
@@ -59,8 +68,10 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
           ログイン
         </button>
         <button
+          aria-selected={mode === "register"}
           className="auth-tab"
           data-active={mode === "register"}
+          disabled={loading}
           onClick={() => onModeChange("register")}
           role="tab"
           type="button"
@@ -77,6 +88,8 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
             <input
               autoComplete="name"
               className="input-like"
+              disabled={loading}
+              maxLength={50}
               onChange={(event) => setName(event.target.value)}
               required
               value={name}
@@ -88,6 +101,7 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
           <input
             autoComplete="email"
             className="input-like"
+            disabled={loading}
             inputMode="email"
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -100,6 +114,7 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
           <input
             autoComplete={isRegister ? "new-password" : "current-password"}
             className="input-like"
+            disabled={loading}
             minLength={isRegister ? 8 : 1}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -108,61 +123,27 @@ function AuthForm({ error, loading, mode, onModeChange, onSubmit }: AuthFormProp
           />
         </label>
 
-        {error ? <p className="inline-alert">{error}</p> : null}
+        {error ? (
+          <p className="inline-alert" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <button className="primary-action submit" disabled={loading} type="submit">
-          {loading ? "送信中" : title}
+          {loading ? "送信中…" : isRegister ? "アカウントを作成" : "ログイン"}
         </button>
       </form>
     </>
   );
 }
 
-export function AuthDialog({ error, loading, mode, open, onClose, onModeChange, onSubmit }: Props) {
-  if (!open) {
-    return null;
-  }
+export function AuthGate({ error, loading, onStart, onSubmit, statusMessage }: AuthGateProps) {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [mode, setMode] = useState<AuthMode>("login");
 
-  const title = mode === "register" ? "アカウント作成" : "ログイン";
-
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="auth-dialog" aria-label={title} aria-modal="true" role="dialog">
-        <div className="auth-dialog-head">
-          <div>
-            <div className="panel-label">Yorimo Account</div>
-            <h2>{title}</h2>
-            <p>ルート、保存スポット、推薦条件をアカウントに同期します。</p>
-          </div>
-          <button className="icon-button" onClick={onClose} type="button" aria-label="認証画面を閉じる">
-            <X size={19} />
-          </button>
-        </div>
-
-        <AuthForm error={error} loading={loading} mode={mode} onModeChange={onModeChange} onSubmit={onSubmit} />
-      </section>
-    </div>
-  );
-}
-
-export function AuthGate({
-  error,
-  loading,
-  mode,
-  onModeChange,
-  onSubmit,
-  statusMessage
-}: Omit<AuthFormProps, "error"> & { error?: string | null; statusMessage?: string | null }) {
-  const authCardRef = useRef<HTMLElement>(null);
-
-  const showAuthForm = (nextMode: AuthMode) => {
-    onModeChange(nextMode);
-    window.requestAnimationFrame(() => {
-      const card = authCardRef.current;
-      if (card && typeof card.scrollIntoView === "function") {
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    });
+  const openAuth = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setAuthOpen(true);
   };
 
   return (
@@ -178,43 +159,57 @@ export function AuthGate({
           <BrandMark />
           <div>
             <strong>Yorimo</strong>
-            <span className="brand-subtitle">日常ルートの寄り道マップ</span>
+            <span className="brand-subtitle">寄り道マッピングSNS</span>
           </div>
         </div>
         <nav className="landing-nav" aria-label="Yorimoの特徴">
+          <span>地図で探す</span>
           <span>ルートに沿って</span>
-          <span>今の気分で</span>
-          <span>無理なく寄れる</span>
+          <span>口コミで共有</span>
         </nav>
         <div className="landing-header-actions">
-          <button aria-label="ログインフォームを表示" onClick={() => showAuthForm("login")} type="button">ログイン</button>
-          <button className="landing-header-primary" onClick={() => showAuthForm("register")} type="button">
-            無料ではじめる
+          <button disabled={loading} onClick={() => openAuth("login")} type="button">
+            ログイン
+          </button>
+          <button className="landing-header-primary" disabled={loading} onClick={onStart} type="button">
+            {loading ? "準備中…" : "デモを始める"}
           </button>
         </div>
       </header>
 
       <section className="auth-hero" aria-label="Yorimo">
         <div className="auth-copy">
-          <p className="landing-brand-signal">Yorimo</p>
+          <p className="landing-brand-signal">Yorimo prototype</p>
           <h1>
             <span>帰り道に、</span>
             <em>ちょうどいい発見</em>
             <span>を。</span>
           </h1>
-          <p>現在地やいつものルート、今の気分をもとに、無理なく立ち寄れる場所を見つけます。</p>
+          <p>
+            通学・通勤ルート沿いの寄り道を、地図・時間・気分から見つけ、口コミで共有できるプロトタイプです。
+          </p>
           <div className="landing-hero-actions">
-            <button className="landing-main-action" onClick={() => showAuthForm("register")} type="button">
-              寄り道を見つける <ArrowRight size={18} />
+            <button className="landing-main-action" disabled={loading} onClick={onStart} type="button">
+              {loading ? "デモを準備しています…" : "デモを始める"} <ArrowRight size={18} />
             </button>
-            <span>登録無料・すぐに使えます</span>
+            <button className="landing-account-action" disabled={loading} onClick={() => openAuth("login")} type="button">
+              アカウントでログイン
+            </button>
+            <span>デモは登録不要・1クリックで体験</span>
           </div>
+          <p className="landing-demo-note">プロトタイプの確認は「デモを始める」をクリック</p>
+          {statusMessage ? <p className="inline-alert">{statusMessage}</p> : null}
+          {error ? (
+            <p className="inline-alert" role="alert">
+              {error}
+            </p>
+          ) : null}
         </div>
 
         <div className="auth-preview" aria-hidden="true">
           <div className="landing-preview-glow" />
           <div className="landing-map-label">
-            <Navigation size={14} /> 東京駅 → 自宅
+            <Navigation size={14} /> 東京駅 → 新宿駅
           </div>
           <svg className="landing-route-svg" viewBox="0 0 360 400" preserveAspectRatio="none">
             <path
@@ -229,7 +224,7 @@ export function AuthGate({
             <MapPin size={16} />
           </span>
           <span className="auth-pin two">
-            <Coffee size={16} />
+            <Map size={16} />
           </span>
           <span className="auth-pin three">
             <MapPin size={16} />
@@ -237,13 +232,16 @@ export function AuthGate({
           <div className="landing-detour-badge">
             帰り道から <strong>+6分</strong>
           </div>
+          <article className="landing-feed-chip">
+            <MessageCircle size={14} />
+            <span>みか</span>
+            帰り道に40分だけ読書。
+          </article>
           <article className="landing-spot-card">
-            <div className="landing-spot-icon">
-              <Coffee size={20} />
-            </div>
+            <img className="landing-spot-thumb" src="/demo-assets/book-cafe.svg" alt="" />
             <div>
               <span>今日のおすすめ</span>
-              <strong>路地裏の小さな喫茶店</strong>
+              <strong>丸の内ブックカフェ</strong>
               <small>
                 <Clock3 size={13} /> 徒歩8分 ・ 予算 ¥1,200
               </small>
@@ -253,48 +251,69 @@ export function AuthGate({
 
         <ul className="landing-benefits" aria-label="Yorimoでできること">
           <li>
-            <Navigation size={18} strokeWidth={2.2} />
+            <span className="landing-benefit-icon" aria-hidden="true">
+              <Route size={18} strokeWidth={2.2} />
+            </span>
             <span>
-              <strong>ルート基準</strong>
-              帰り道から探せる
+              <strong>ルート沿い</strong>
+              駅ルートから探せる
             </span>
           </li>
           <li>
-            <Clock3 size={18} strokeWidth={2.2} />
+            <span className="landing-benefit-icon" aria-hidden="true">
+              <Map size={18} strokeWidth={2.2} />
+            </span>
             <span>
-              <strong>時間に合わせる</strong>
-              15分から調整
+              <strong>地図で推薦</strong>
+              時間・予算・気分で絞る
             </span>
           </li>
           <li>
-            <Sparkles size={18} strokeWidth={2.2} />
+            <span className="landing-benefit-icon" aria-hidden="true">
+              <MessageCircle size={18} strokeWidth={2.2} />
+            </span>
             <span>
-              <strong>気分で選ぶ</strong>
-              好みに寄り添う
+              <strong>口コミ共有</strong>
+              訪れた場所を残せる
             </span>
           </li>
         </ul>
       </section>
 
-      <section
-        className="auth-card landing-auth-card"
-        ref={authCardRef}
-        aria-label={mode === "register" ? "アカウント作成" : "ログイン"}
-      >
-        <div className="auth-card-head">
-          <div>
-            <div className="panel-label">Welcome to Yorimo</div>
-            <h2>{mode === "register" ? "アカウント作成" : "ログイン"}</h2>
-          </div>
-          <p>
-            {mode === "register"
-              ? "無料アカウントを作って、あなただけの寄り道を見つけましょう。"
-              : "続きから、あなたに合う寄り道を探しましょう。"}
-          </p>
+      {authOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            aria-label={mode === "register" ? "アカウント作成" : "ログイン"}
+            aria-modal="true"
+            className="auth-dialog"
+            role="dialog"
+          >
+            <div className="auth-dialog-head">
+              <div>
+                <div className="panel-label">Yorimo Account</div>
+                <h2>{mode === "register" ? "アカウント作成" : "ログイン"}</h2>
+                <p>個人アカウントでは、ルートや保存内容を自分のデータとして利用できます。</p>
+              </div>
+              <button
+                aria-label="認証画面を閉じる"
+                className="icon-button"
+                disabled={loading}
+                onClick={() => setAuthOpen(false)}
+                type="button"
+              >
+                <X size={19} />
+              </button>
+            </div>
+            <AuthForm
+              error={error}
+              loading={loading}
+              mode={mode}
+              onModeChange={setMode}
+              onSubmit={onSubmit}
+            />
+          </section>
         </div>
-        {statusMessage ? <p className="inline-alert">{statusMessage}</p> : null}
-        <AuthForm error={error} loading={loading} mode={mode} onModeChange={onModeChange} onSubmit={onSubmit} />
-      </section>
+      ) : null}
     </main>
   );
 }

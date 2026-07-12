@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
 import { prisma } from "../utils/prisma.js";
-import { notFound } from "../utils/errors.js";
+import { demoCapReached, demoDataLocked, notFound, prototypeRestriction } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
+import { DEMO_LIMITS, isDemoUser, isProtectedDemoRoute, toPublicRoute } from "../config/demo.js";
 
 export const listRoutes = async (req: Request, res: Response) => {
   const routes = await prisma.route.findMany({
@@ -9,10 +10,23 @@ export const listRoutes = async (req: Request, res: Response) => {
     orderBy: { createdAt: "desc" }
   });
 
-  return sendSuccess(res, routes);
+  const orderedRoutes = [...routes].sort((a, b) => {
+    if (isProtectedDemoRoute(a.id)) return -1;
+    if (isProtectedDemoRoute(b.id)) return 1;
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+
+  return sendSuccess(res, orderedRoutes.map(toPublicRoute));
 };
 
 export const createRoute = async (req: Request, res: Response) => {
+  if (isDemoUser(req.user?.id)) {
+    const count = await prisma.route.count({ where: { userId: req.user!.id } });
+    if (count >= DEMO_LIMITS.routes) {
+      throw demoCapReached("共有デモではルートを19件まで追加できます");
+    }
+  }
+
   const route = await prisma.route.create({
     data: {
       userId: req.user!.id,
@@ -32,7 +46,7 @@ export const createRoute = async (req: Request, res: Response) => {
     }
   });
 
-  return sendSuccess(res, route, 201);
+  return sendSuccess(res, toPublicRoute(route), 201);
 };
 
 export const getRoute = async (req: Request, res: Response) => {
@@ -44,7 +58,7 @@ export const getRoute = async (req: Request, res: Response) => {
     throw notFound("ルートが見つかりません");
   }
 
-  return sendSuccess(res, route);
+  return sendSuccess(res, toPublicRoute(route));
 };
 
 export const updateRoute = async (req: Request, res: Response) => {
@@ -55,13 +69,19 @@ export const updateRoute = async (req: Request, res: Response) => {
   if (!route) {
     throw notFound("ルートが見つかりません");
   }
+  if (isProtectedDemoRoute(route.id)) {
+    throw demoDataLocked("基準ルートは変更できません");
+  }
+  if (isDemoUser(req.user?.id)) {
+    throw prototypeRestriction("公開デモでは追加ルートの編集はできません。作り直してください");
+  }
 
   const updated = await prisma.route.update({
     where: { id: route.id },
     data: req.body
   });
 
-  return sendSuccess(res, updated);
+  return sendSuccess(res, toPublicRoute(updated));
 };
 
 export const deleteRoute = async (req: Request, res: Response) => {
@@ -71,6 +91,9 @@ export const deleteRoute = async (req: Request, res: Response) => {
 
   if (!route) {
     throw notFound("ルートが見つかりません");
+  }
+  if (isProtectedDemoRoute(route.id)) {
+    throw demoDataLocked("基準ルートは削除できません");
   }
 
   await prisma.route.delete({ where: { id: route.id } });

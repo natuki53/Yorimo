@@ -30,6 +30,7 @@ type OverpassWay = {
   type: "way";
   id: number;
   nodes?: number[];
+  geometry?: Array<{ lat: number; lon: number }>;
   tags?: Record<string, string>;
 };
 
@@ -137,7 +138,9 @@ const buildBoundingBox = (input: RailRouteInput): BoundingBox => {
   const start = { lat: input.startLat, lng: input.startLng };
   const end = { lat: input.endLat, lng: input.endLng };
   const directDistance = distanceKm(start, end);
-  const padding = Math.max(0.015, Math.min(0.12, directDistance / 100));
+  // Keep the query close to the corridor. The old wide box made central Tokyo
+  // queries large enough to time out before any rail geometry was returned.
+  const padding = Math.max(0.01, Math.min(0.03, directDistance / 300));
 
   return {
     south: Math.min(start.lat, end.lat) - padding,
@@ -148,9 +151,9 @@ const buildBoundingBox = (input: RailRouteInput): BoundingBox => {
 };
 
 const buildOverpassQuery = ({ south, west, north, east }: BoundingBox) =>
-  `[out:json][timeout:25];` +
-  `(way[railway~"^(rail|subway|light_rail|tram|monorail)$"](${south},${west},${north},${east});>;);` +
-  `out body;`;
+  `[out:json][timeout:12];` +
+  `way[railway~"^(rail|subway|light_rail|tram|monorail)$"](${south},${west},${north},${east});` +
+  `out geom;`;
 
 const fetchRailwayElements = async (bbox: BoundingBox) => {
   const body = new URLSearchParams({ data: buildOverpassQuery(bbox) });
@@ -163,7 +166,8 @@ const fetchRailwayElements = async (bbox: BoundingBox) => {
           "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
           "User-Agent": "Yorimo local rail route"
         },
-        body
+        body,
+        signal: AbortSignal.timeout(8000)
       });
 
       if (!response.ok) {
@@ -194,6 +198,19 @@ const buildRailGraph = (elements: OverpassElement[]) => {
     }
   }
 
+  for (const way of elements.filter(isOverpassWay)) {
+    const wayNodes = way.nodes ?? [];
+    const geometry = way.geometry ?? [];
+    for (let index = 0; index < Math.min(wayNodes.length, geometry.length); index += 1) {
+      const point = geometry[index];
+      nodes.set(String(wayNodes[index]), {
+        id: String(wayNodes[index]),
+        lat: point.lat,
+        lng: point.lon
+      });
+    }
+  }
+
   const addEdge = (fromId: number, toId: number) => {
     const from = nodes.get(String(fromId));
     const to = nodes.get(String(toId));
@@ -220,19 +237,56 @@ const buildRailGraph = (elements: OverpassElement[]) => {
   return { graph, nodes };
 };
 
-const nearestRailNode = (nodes: Map<string, RailNode>, point: RailRoutePoint) => {
-  let nearest: RailNode | null = null;
-  let nearestDistance = Number.POSITIVE_INFINITY;
+const bestConnectedRailEndpoints = (
+  graph: Map<string, GraphEdge[]>,
+  nodes: Map<string, RailNode>,
+  startPoint: RailRoutePoint,
+  endPoint: RailRoutePoint
+) => {
+  const visited = new Set<string>();
+  let best: { start: RailNode; end: RailNode; score: number } | null = null;
 
-  for (const node of nodes.values()) {
-    const distance = distanceKm(point, node);
-    if (distance < nearestDistance) {
-      nearest = node;
-      nearestDistance = distance;
+  for (const seedId of graph.keys()) {
+    if (visited.has(seedId)) continue;
+    const queue = [seedId];
+    visited.add(seedId);
+    let nearestStart: RailNode | null = null;
+    let nearestEnd: RailNode | null = null;
+    let startDistance = Number.POSITIVE_INFINITY;
+    let endDistance = Number.POSITIVE_INFINITY;
+
+    while (queue.length > 0) {
+      const id = queue.pop()!;
+      const node = nodes.get(id);
+      if (node) {
+        const fromStart = distanceKm(startPoint, node);
+        const fromEnd = distanceKm(endPoint, node);
+        if (fromStart < startDistance) {
+          startDistance = fromStart;
+          nearestStart = node;
+        }
+        if (fromEnd < endDistance) {
+          endDistance = fromEnd;
+          nearestEnd = node;
+        }
+      }
+
+      for (const edge of graph.get(id) ?? []) {
+        if (!visited.has(edge.to)) {
+          visited.add(edge.to);
+          queue.push(edge.to);
+        }
+      }
+    }
+
+    if (!nearestStart || !nearestEnd || startDistance > 2 || endDistance > 2) continue;
+    const score = startDistance + endDistance;
+    if (!best || score < best.score) {
+      best = { start: nearestStart, end: nearestEnd, score };
     }
   }
 
-  return nearest;
+  return best;
 };
 
 const shortestRailPath = (
@@ -308,14 +362,18 @@ export const getRailRoutePath = async (input: RailRouteInput) => {
   const request = (async () => {
     const elements = await fetchRailwayElements(buildBoundingBox(input));
     const { graph, nodes } = buildRailGraph(elements);
-    const start = nearestRailNode(nodes, { lat: input.startLat, lng: input.startLng });
-    const end = nearestRailNode(nodes, { lat: input.endLat, lng: input.endLng });
+    const endpoints = bestConnectedRailEndpoints(
+      graph,
+      nodes,
+      { lat: input.startLat, lng: input.startLng },
+      { lat: input.endLat, lng: input.endLng }
+    );
 
-    if (!start || !end) {
+    if (!endpoints) {
       return [];
     }
 
-    const points = shortestRailPath(graph, nodes, start.id, end.id);
+    const points = shortestRailPath(graph, nodes, endpoints.start.id, endpoints.end.id);
     routeCache.set(cacheKey, {
       expiresAt: Date.now() + cacheTtlMs,
       points

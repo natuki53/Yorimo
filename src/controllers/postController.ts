@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../utils/prisma.js";
-import { forbidden, notFound } from "../utils/errors.js";
+import { demoCapReached, forbidden, notFound, prototypeRestriction } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { resolveMediaUrl } from "../services/mediaService.js";
+import { DEMO_LIMITS, isDemoUser } from "../config/demo.js";
 
 const activePostFilter = (): Prisma.PostWhereInput => ({
   OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
@@ -52,6 +53,26 @@ export const listPosts = async (req: Request, res: Response) => {
 };
 
 export const createPost = async (req: Request, res: Response) => {
+  if (isDemoUser(req.user?.id)) {
+    const caption = typeof req.body.caption === "string" ? req.body.caption.trim() : "";
+    const validDemoReview =
+      req.body.type === "review" &&
+      !req.body.mediaUrl &&
+      req.body.visibility === "public" &&
+      caption.length >= 1 &&
+      caption.length <= 300 &&
+      (req.body.moodTags?.length ?? 0) <= 5;
+
+    if (!validDemoReview) {
+      throw prototypeRestriction("公開デモでは300文字以内の公開口コミのみ投稿できます");
+    }
+
+    const count = await prisma.post.count({ where: { userId: req.user!.id, type: "review" } });
+    if (count >= DEMO_LIMITS.reviews) {
+      throw demoCapReached("共有デモの口コミ上限に達しました");
+    }
+  }
+
   const spot = await prisma.spot.findUnique({ where: { id: req.body.spotId } });
   if (!spot) {
     throw notFound("スポットが見つかりません");

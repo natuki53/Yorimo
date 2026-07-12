@@ -11,6 +11,7 @@ import { validateBody, validateParams, validateQuery } from "../middlewares/vali
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { idParamSchema } from "../validations/common.js";
 import { postCreateSchema, postQuerySchema, postUpdateSchema } from "../validations/postValidation.js";
+import { blockInDemo } from "../middlewares/demoPolicy.js";
 
 export const postRouter = Router();
 
@@ -18,5 +19,5 @@ postRouter.use(requireAuth);
 postRouter.get("/", validateQuery(postQuerySchema), asyncHandler(listPosts));
 postRouter.post("/", validateBody(postCreateSchema), asyncHandler(createPost));
 postRouter.get("/:id", validateParams(idParamSchema), asyncHandler(getPost));
-postRouter.patch("/:id", validateParams(idParamSchema), validateBody(postUpdateSchema), asyncHandler(updatePost));
-postRouter.delete("/:id", validateParams(idParamSchema), asyncHandler(deletePost));
+postRouter.patch("/:id", blockInDemo, validateParams(idParamSchema), validateBody(postUpdateSchema), asyncHandler(updatePost));
+postRouter.delete("/:id", blockInDemo, validateParams(idParamSchema), asyncHandler(deletePost));

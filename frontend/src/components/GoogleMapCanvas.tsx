@@ -215,6 +215,58 @@ const normalizeApiKey = (apiKey?: string) => {
   return normalized;
 };
 
+function FallbackMap({ center, route, spots, selectedSpot, onSpotSelect }: Pick<Props, "center" | "route" | "spots" | "selectedSpot" | "onSpotSelect">) {
+  const points = [
+    center,
+    ...(route ? [{ lat: route.startLat, lng: route.startLng }, { lat: route.endLat, lng: route.endLng }] : []),
+    ...spots.map((spot) => ({ lat: spot.lat, lng: spot.lng }))
+  ];
+  const lats = points.map((point) => point.lat);
+  const lngs = points.map((point) => point.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const latRange = Math.max(maxLat - minLat, 0.01);
+  const lngRange = Math.max(maxLng - minLng, 0.01);
+  const project = (point: GeoPoint) => ({
+    x: 7 + ((point.lng - minLng) / lngRange) * 86,
+    y: 93 - ((point.lat - minLat) / latRange) * 86
+  });
+  const current = project(center);
+  const routeStart = route ? project({ lat: route.startLat, lng: route.startLng }) : null;
+  const routeEnd = route ? project({ lat: route.endLat, lng: route.endLng }) : null;
+
+  return (
+    <div className="fallback-map" aria-label="簡易地図" role="region">
+      <div className="fallback-map-notice">簡易地図で表示中</div>
+      <svg aria-hidden="true" className="fallback-map-canvas" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <path className="fallback-road road-a" d="M-5 72 C 18 55, 36 80, 105 24" />
+        <path className="fallback-road road-b" d="M4 10 C 35 38, 64 30, 96 92" />
+        <path className="fallback-road road-c" d="M-5 40 C 24 44, 70 68, 106 57" />
+        {routeStart && routeEnd ? <path className="fallback-route" d={`M ${routeStart.x} ${routeStart.y} L ${routeEnd.x} ${routeEnd.y}`} /> : null}
+      </svg>
+      <span className="fallback-current" style={{ left: `${current.x}%`, top: `${current.y}%` }} title="現在地" />
+      {spots.map((spot, index) => {
+        const position = project(spot);
+        return (
+          <button
+            aria-label={spot.name}
+            className={`fallback-marker ${selectedSpot?.id === spot.id ? "selected" : ""}`}
+            key={spot.id}
+            onClick={() => onSpotSelect(spot)}
+            style={{ left: `${position.x}%`, top: `${position.y}%` }}
+            title={spot.name}
+            type="button"
+          >
+            {index + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function GoogleMapCanvas({
   apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   cameraFocusRequest,
@@ -586,7 +638,9 @@ export function GoogleMapCanvas({
     const fallback = () => {
       directionsRenderers.current.forEach((renderer) => renderer.setMap(null));
       directionsRenderers.current = [];
-      if (travelMode !== "transit") {
+      // Public transit must follow real rail geometry. Do not imply an
+      // unavailable route by drawing a straight line between stations.
+      if (travelMode !== "transit" && path.length >= 2) {
         drawPolyline(path, travelMode);
       }
     };
@@ -642,16 +696,5 @@ export function GoogleMapCanvas({
     );
   }
 
-  return (
-    <div className="map-unavailable" aria-label="Google Maps 表示領域" role="region">
-      <div>
-        <strong>Google Maps を表示できません</strong>
-        <span>
-          {mapStatus === "error"
-            ? "地図サービスへの接続に失敗しました。API キーの制限と Maps JavaScript API の有効化を確認してください。"
-            : "VITE_GOOGLE_MAPS_API_KEY が未設定です。フロント用キーを frontend/.env.local に設定してください。"}
-        </span>
-      </div>
-    </div>
-  );
+  return <FallbackMap center={center} onSpotSelect={onSpotSelect} route={route} selectedSpot={selectedSpot} spots={sortedSpots} />;
 }
