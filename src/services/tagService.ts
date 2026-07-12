@@ -15,7 +15,7 @@ export const syncSpotTags = async (spotId: string, tags: string[], category?: st
   const normalizedTags = normalizeTags(tags);
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.spotTag.deleteMany({ where: { spotId } });
+    const tagIds: string[] = [];
 
     for (const name of normalizedTags) {
       const tag = await tx.tag.upsert({
@@ -24,12 +24,21 @@ export const syncSpotTags = async (spotId: string, tags: string[], category?: st
         create: { name, category: category ?? null }
       });
 
-      await tx.spotTag.create({
-        data: {
-          spotId,
-          tagId: tag.id
-        }
+      tagIds.push(tag.id);
+    }
+
+    if (tagIds.length > 0) {
+      await tx.spotTag.createMany({
+        data: tagIds.map((tagId) => ({ spotId, tagId })),
+        skipDuplicates: true
       });
     }
+
+    await tx.spotTag.deleteMany({
+      where: {
+        spotId,
+        ...(tagIds.length > 0 ? { tagId: { notIn: tagIds } } : {})
+      }
+    });
   });
 };
