@@ -201,6 +201,37 @@ const registeredRoutePath = (route: Route) => [
   { lat: route.endLat, lng: route.endLng }
 ];
 
+const tokyoShinjukuRailPath: GeoPoint[] = [
+  { lat: 35.681236, lng: 139.767125 },
+  { lat: 35.69169, lng: 139.77088 },
+  { lat: 35.699352, lng: 139.765269 },
+  { lat: 35.70204, lng: 139.75369 },
+  { lat: 35.70194, lng: 139.74595 },
+  { lat: 35.69128, lng: 139.73559 },
+  { lat: 35.68595, lng: 139.73017 },
+  { lat: 35.68009, lng: 139.72028 },
+  { lat: 35.68119, lng: 139.71142 },
+  { lat: 35.68306, lng: 139.70204 },
+  { lat: 35.689592, lng: 139.700413 }
+];
+
+const bundledRailPath = (route: Route) => {
+  const near = (point: GeoPoint, expected: GeoPoint) =>
+    Math.abs(point.lat - expected.lat) < 0.02 && Math.abs(point.lng - expected.lng) < 0.02;
+  const start = { lat: route.startLat, lng: route.startLng };
+  const end = { lat: route.endLat, lng: route.endLng };
+  const tokyo = tokyoShinjukuRailPath[0];
+  const shinjuku = tokyoShinjukuRailPath.at(-1)!;
+
+  if (near(start, tokyo) && near(end, shinjuku)) {
+    return tokyoShinjukuRailPath;
+  }
+  if (near(start, shinjuku) && near(end, tokyo)) {
+    return [...tokyoShinjukuRailPath].reverse();
+  }
+  return [];
+};
+
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const directionStationQuery = (stationName: string) => {
@@ -695,6 +726,11 @@ export function GoogleMapCanvas({
           return;
         }
         if (renderVersion.current !== currentRenderVersion) {
+          return;
+        }
+        const bundledPoints = bundledRailPath(route);
+        if (bundledPoints.length >= 2) {
+          drawPolyline(bundledPoints, "transit");
           return;
         }
         const points = await getRailPath(route);

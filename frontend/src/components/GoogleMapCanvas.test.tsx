@@ -302,7 +302,39 @@ describe("GoogleMapCanvas", () => {
     expect(railRouteMock).not.toHaveBeenCalled();
   });
 
+  it("uses bundled rail geometry for the presentation route when Google has no route", async () => {
+    const googleMock = createGoogleMock(() => ({ routes: [] }));
+    loadMock.mockResolvedValueOnce(googleMock);
+    Object.defineProperty(window, "google", { configurable: true, value: googleMock });
+
+    render(
+      <GoogleMapCanvas
+        apiKey="AIzaSyD0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D0D"
+        center={tokyoStation}
+        onSpotSelect={vi.fn()}
+        recommendations={fixtureRecommendations}
+        route={fixtureRoutes[0]}
+        spots={fixtureSpots}
+      />
+    );
+
+    await waitFor(() => expect(googleMock.spies.polyline).toHaveBeenCalled());
+    const options = googleMock.spies.polyline.mock.calls.at(-1)?.[0];
+    expect(options.path).toHaveLength(11);
+    expect(options.path[0]).toEqual({ lat: 35.681236, lng: 139.767125 });
+    expect(options.path.at(-1)).toEqual({ lat: 35.689592, lng: 139.700413 });
+    expect(options).toEqual(expect.objectContaining({ geodesic: false, zIndex: 20 }));
+    expect(railRouteMock).not.toHaveBeenCalled();
+  });
+
   it("draws a rail fallback route instead of a straight line when transit directions fail", async () => {
+    const nonBundledRoute = {
+      ...fixtureRoutes[0],
+      startLat: 35.72,
+      startLng: 139.8,
+      endLat: 35.66,
+      endLng: 139.66
+    };
     const railPoints = [
       { lat: 35.6812, lng: 139.7671 },
       { lat: 35.684, lng: 139.741 },
@@ -326,7 +358,7 @@ describe("GoogleMapCanvas", () => {
         center={tokyoStation}
         onSpotSelect={vi.fn()}
         recommendations={fixtureRecommendations}
-        route={fixtureRoutes[0]}
+        route={nonBundledRoute}
         selectedSpot={fixtureSpots[0]}
         spots={fixtureSpots}
       />
@@ -347,16 +379,23 @@ describe("GoogleMapCanvas", () => {
       )
     );
     expect(railRouteMock).toHaveBeenCalledWith({
-      startLat: fixtureRoutes[0].startLat,
-      startLng: fixtureRoutes[0].startLng,
-      endLat: fixtureRoutes[0].endLat,
-      endLng: fixtureRoutes[0].endLng
+      startLat: nonBundledRoute.startLat,
+      startLng: nonBundledRoute.startLng,
+      endLat: nonBundledRoute.endLat,
+      endLng: nonBundledRoute.endLng
     });
     expect(googleMock.spies.transitLayer).toHaveBeenCalledTimes(1);
     expect(googleMock.spies.transitLayerSetMap).toHaveBeenCalledWith(expect.any(Object));
   });
 
   it("does not draw a misleading straight line when transit route providers fail", async () => {
+    const nonBundledRoute = {
+      ...fixtureRoutes[0],
+      startLat: 35.72,
+      startLng: 139.8,
+      endLat: 35.66,
+      endLng: 139.66
+    };
     railRouteMock.mockResolvedValueOnce({ points: [], source: "none", total: 0 });
     const googleMock = createGoogleMock(() => ({ routes: [] }));
     loadMock.mockResolvedValueOnce(googleMock);
@@ -368,7 +407,7 @@ describe("GoogleMapCanvas", () => {
         center={tokyoStation}
         onSpotSelect={vi.fn()}
         recommendations={fixtureRecommendations}
-        route={fixtureRoutes[0]}
+        route={nonBundledRoute}
         spots={fixtureSpots}
       />
     );
