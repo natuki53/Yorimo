@@ -18,26 +18,28 @@ vi.mock("../lib/api", () => ({
   }
 }));
 
-type RouteCallback = (result: google.maps.DirectionsResult | null, status: string) => void;
-type RouteHandler = (request: google.maps.DirectionsRequest, callback: RouteCallback) => void;
+type ComputeRoutesResult = { routes?: google.maps.routes.Route[] };
+type ComputeRoutesHandler = (
+  request: google.maps.routes.ComputeRoutesRequest
+) => ComputeRoutesResult | Promise<ComputeRoutesResult>;
 
-const createGoogleMock = (routeImplementation?: RouteHandler) => {
-  const setDirections = vi.fn();
-  const setMap = vi.fn();
-  const directionsRenderer = vi.fn().mockImplementation(() => ({
-    setDirections,
-    setMap
-  }));
-  const route = vi.fn().mockImplementation((request: google.maps.DirectionsRequest, callback: RouteCallback) => {
+const createGoogleMock = (routeImplementation?: ComputeRoutesHandler) => {
+  const routePolylineSetMap = vi.fn();
+  const createPolylines = vi.fn(() => [{ setMap: routePolylineSetMap }]);
+  const computedRoute = {
+    createPolylines,
+    path: [
+      { lat: () => 35.6812, lng: () => 139.7671 },
+      { lat: () => 35.6896, lng: () => 139.7004 }
+    ]
+  } as unknown as google.maps.routes.Route;
+  const computeRoutes = vi.fn().mockImplementation(async (request: google.maps.routes.ComputeRoutesRequest) => {
     if (routeImplementation) {
-      routeImplementation(request, callback);
-      return;
+      return routeImplementation(request);
     }
-    callback({ routes: [{ summary: "Tokyo transit route" }] } as google.maps.DirectionsResult, "OK");
+    return { routes: [computedRoute] };
   });
-  const directionsService = vi.fn().mockImplementation(() => ({
-    route
-  }));
+  const importLibrary = vi.fn(async () => ({ Route: { computeRoutes } }));
   const fitBounds = vi.fn();
   const getZoom = vi.fn(() => 13);
   const panBy = vi.fn();
@@ -79,9 +81,7 @@ const createGoogleMock = (routeImplementation?: RouteHandler) => {
   return {
     maps: {
       ControlPosition: { RIGHT_CENTER: "RIGHT_CENTER" },
-      DirectionsRenderer: directionsRenderer,
-      DirectionsService: directionsService,
-      DirectionsStatus: { OK: "OK" },
+      importLibrary,
       LatLngBounds: bounds,
       Map: map,
       Marker: marker,
@@ -96,20 +96,19 @@ const createGoogleMock = (routeImplementation?: RouteHandler) => {
     spies: {
       bounds,
       boundsExtend,
-      directionsRenderer,
-      directionsService,
+      computeRoutes,
+      createPolylines,
       fitBounds,
       getZoom,
+      importLibrary,
       map,
       marker,
       markerListeners,
       panBy,
       panTo,
       polyline,
-      route,
-      setDirections,
+      routePolylineSetMap,
       setZoom,
-      setMap,
       transitLayer,
       transitLayerSetMap
     }
@@ -174,30 +173,26 @@ describe("GoogleMapCanvas", () => {
         zoomControlOptions: { position: "RIGHT_CENTER" }
       })
     );
-    expect(googleMock.spies.directionsService).toHaveBeenCalledTimes(1);
-    expect(googleMock.spies.route).toHaveBeenCalledTimes(1);
-    expect(googleMock.spies.route).toHaveBeenCalledWith(
+    expect(googleMock.spies.computeRoutes).toHaveBeenCalledTimes(1);
+    expect(googleMock.spies.computeRoutes).toHaveBeenCalledWith(
       expect.objectContaining({
         destination: "新宿駅, 日本",
         origin: "東京駅, 日本",
-        transitOptions: expect.objectContaining({
-          departureTime: expect.any(Date),
-          modes: ["RAIL", "SUBWAY", "TRAIN", "TRAM"]
+        departureTime: expect.any(Date),
+        fields: ["path", "legs"],
+        transitPreference: expect.objectContaining({
+          allowedTransitModes: ["RAIL", "SUBWAY", "TRAIN", "TRAM"]
         }),
         travelMode: "TRANSIT",
-        waypoints: undefined
-      }),
-      expect.any(Function)
+        intermediates: undefined
+      })
     );
-    expect(googleMock.spies.setDirections).toHaveBeenCalledTimes(1);
-    expect(googleMock.spies.setDirections).toHaveBeenCalledWith({ routes: [{ summary: "Tokyo transit route" }] });
-    expect(googleMock.spies.polyline).not.toHaveBeenCalled();
-    expect(railRouteMock).toHaveBeenCalledWith({
-      startLat: fixtureRoutes[0].startLat,
-      startLng: fixtureRoutes[0].startLng,
-      endLat: fixtureRoutes[0].endLat,
-      endLng: fixtureRoutes[0].endLng
+    expect(googleMock.spies.createPolylines).toHaveBeenCalledWith({
+      polylineOptions: expect.objectContaining({ strokeColor: expect.any(String) })
     });
+    expect(googleMock.spies.routePolylineSetMap).toHaveBeenCalledWith(expect.any(Object));
+    expect(googleMock.spies.polyline).not.toHaveBeenCalled();
+    expect(railRouteMock).not.toHaveBeenCalled();
 
     const spotMarkerOptions = googleMock.spies.marker.mock.calls.find(([options]) => options.title === fixtureSpots[0].name)?.[0];
     const otherSpotMarkerOptions = googleMock.spies.marker.mock.calls.find(([options]) => options.title === fixtureSpots[1].name)?.[0];
@@ -251,9 +246,7 @@ describe("GoogleMapCanvas", () => {
       source: "osm",
       total: railPoints.length
     });
-    const googleMock = createGoogleMock((_request, callback) => {
-      callback(null, "ZERO_RESULTS");
-    });
+    const googleMock = createGoogleMock(() => ({ routes: [] }));
     loadMock.mockResolvedValueOnce(googleMock);
     Object.defineProperty(window, "google", {
       configurable: true,
@@ -273,15 +266,11 @@ describe("GoogleMapCanvas", () => {
     );
 
     await waitFor(() => expect(googleMock.spies.map).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(googleMock.spies.route).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(googleMock.spies.computeRoutes).toHaveBeenCalledTimes(2));
 
-    const retryRequest = googleMock.spies.route.mock.calls[1][0] as google.maps.DirectionsRequest;
-    expect(retryRequest.transitOptions).toEqual(
-      expect.objectContaining({
-        departureTime: expect.any(Date)
-      })
-    );
-    expect(retryRequest.transitOptions).not.toHaveProperty("modes");
+    const retryRequest = googleMock.spies.computeRoutes.mock.calls[1][0] as google.maps.routes.ComputeRoutesRequest;
+    expect(retryRequest.departureTime).toEqual(expect.any(Date));
+    expect(retryRequest.transitPreference).toBeUndefined();
     await waitFor(() =>
       expect(googleMock.spies.polyline).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -302,7 +291,7 @@ describe("GoogleMapCanvas", () => {
 
   it("does not draw a misleading straight line when transit route providers fail", async () => {
     railRouteMock.mockResolvedValueOnce({ points: [], source: "none", total: 0 });
-    const googleMock = createGoogleMock((_request, callback) => callback(null, "ZERO_RESULTS"));
+    const googleMock = createGoogleMock(() => ({ routes: [] }));
     loadMock.mockResolvedValueOnce(googleMock);
     Object.defineProperty(window, "google", { configurable: true, value: googleMock });
 
@@ -317,7 +306,7 @@ describe("GoogleMapCanvas", () => {
       />
     );
 
-    await waitFor(() => expect(googleMock.spies.route).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(googleMock.spies.computeRoutes).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(railRouteMock).toHaveBeenCalledTimes(1));
     expect(googleMock.spies.polyline).not.toHaveBeenCalled();
   });
@@ -344,22 +333,21 @@ describe("GoogleMapCanvas", () => {
     );
 
     await waitFor(() => expect(googleMock.spies.map).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(googleMock.spies.route).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(googleMock.spies.computeRoutes).toHaveBeenCalledTimes(1));
 
-    expect(googleMock.spies.route).toHaveBeenCalledWith(
+    expect(googleMock.spies.computeRoutes).toHaveBeenCalledWith(
       expect.objectContaining({
         destination: { lat: fixtureRoutes[0].endLat, lng: fixtureRoutes[0].endLng },
         origin: { lat: fixtureRoutes[0].startLat, lng: fixtureRoutes[0].startLng },
         travelMode: "DRIVING",
-        waypoints: [
+        intermediates: [
           {
-            location: { lat: fixtureSpots[0].lat, lng: fixtureSpots[0].lng },
-            stopover: true
+            location: { lat: fixtureSpots[0].lat, lng: fixtureSpots[0].lng }
           }
         ]
-      }),
-      expect.any(Function)
+      })
     );
+    expect(googleMock.spies.createPolylines).toHaveBeenCalledTimes(1);
     expect(googleMock.spies.polyline).not.toHaveBeenCalled();
   });
 

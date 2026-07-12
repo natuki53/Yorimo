@@ -285,7 +285,7 @@ export function GoogleMapCanvas({
   const markers = useRef<google.maps.Marker[]>([]);
   const routeLine = useRef<google.maps.Polyline | null>(null);
   const transitLayer = useRef<google.maps.TransitLayer | null>(null);
-  const directionsRenderers = useRef<google.maps.DirectionsRenderer[]>([]);
+  const routePolylines = useRef<google.maps.Polyline[]>([]);
   const renderVersion = useRef(0);
   const railPathCache = useRef(new Map<string, GeoPoint[]>());
   const railPathRequests = useRef(new Map<string, Promise<GeoPoint[]>>());
@@ -532,8 +532,8 @@ export function GoogleMapCanvas({
     routeLine.current = null;
     transitLayer.current?.setMap(null);
     transitLayer.current = null;
-    directionsRenderers.current.forEach((renderer) => renderer.setMap(null));
-    directionsRenderers.current = [];
+    routePolylines.current.forEach((polyline) => polyline.setMap(null));
+    routePolylines.current = [];
     const currentRenderVersion = renderVersion.current + 1;
     renderVersion.current = currentRenderVersion;
 
@@ -566,103 +566,87 @@ export function GoogleMapCanvas({
 
     const googleTravelMode = googleTravelModeFor(window.google, travelMode);
     const routeLineOptions = routeLineOptionsByMode(travelMode);
-    const service = new window.google.maps.DirectionsService();
-    const createRenderer = () =>
-      new window.google.maps.DirectionsRenderer({
-        preserveViewport: true,
-        suppressMarkers: true,
-        polylineOptions: routeLineOptions
-      });
-
-    const sendRequest = (
-      request: google.maps.DirectionsRequest,
-      renderer: google.maps.DirectionsRenderer,
-      onDone?: (ok: boolean) => void
-    ) => {
-      renderer.setMap(map);
-      directionsRenderers.current.push(renderer);
-      service.route(request, (result, status) => {
-        if (renderVersion.current !== currentRenderVersion) {
-          return;
-        }
-
-        if (status === window.google.maps.DirectionsStatus.OK && result) {
-          renderer.setDirections(result);
-          onDone?.(true);
-          return;
-        }
-
-        renderer.setMap(null);
-        onDone?.(false);
-      });
-    };
-
-    const buildDirectionsRequest = (preferRail: boolean): google.maps.DirectionsRequest => {
-      const transitOptions =
-        travelMode === "transit"
-          ? {
-              departureTime: new Date(),
-              ...(preferRail ? { modes: transitModesFor(window.google) } : {})
-            }
-          : undefined;
-
+    const buildRoutesRequest = (preferRail: boolean): google.maps.routes.ComputeRoutesRequest => {
       return {
         destination: directionLocationFor(route, "end"),
-        origin: directionLocationFor(route, "start"),
-        optimizeWaypoints: false,
-        provideRouteAlternatives: false,
-        region: "jp",
-        transitOptions,
-        travelMode: googleTravelMode,
-        waypoints:
+        departureTime: travelMode === "transit" ? new Date() : undefined,
+        fields: travelMode === "transit" ? ["path", "legs"] : ["path"],
+        intermediates:
           waypointSpot && travelMode !== "transit"
-            ? [{ location: { lat: waypointSpot.lat, lng: waypointSpot.lng }, stopover: true }]
-            : undefined
+            ? [{ location: { lat: waypointSpot.lat, lng: waypointSpot.lng } }]
+            : undefined,
+        language: "ja",
+        origin: directionLocationFor(route, "start"),
+        polylineQuality: "HIGH_QUALITY",
+        region: "jp",
+        transitPreference:
+          travelMode === "transit" && preferRail
+            ? { allowedTransitModes: transitModesFor(window.google) }
+            : undefined,
+        travelMode: googleTravelMode,
       };
+    };
+
+    const renderGoogleRoute = async (preferRail: boolean) => {
+      try {
+        const { Route: GoogleRoute } = (await window.google.maps.importLibrary("routes")) as google.maps.RoutesLibrary;
+        const { routes } = await GoogleRoute.computeRoutes(buildRoutesRequest(preferRail));
+        if (renderVersion.current !== currentRenderVersion || !routes?.[0]) {
+          return false;
+        }
+
+        routeLine.current?.setMap(null);
+        routeLine.current = null;
+        routePolylines.current.forEach((polyline) => polyline.setMap(null));
+        routePolylines.current = routes[0].createPolylines({
+          polylineOptions: routeLineOptions
+        });
+        routePolylines.current.forEach((polyline) => polyline.setMap(map));
+
+        const routeBounds = new window.google.maps.LatLngBounds();
+        routes[0].path?.forEach((point) => routeBounds.extend(point));
+        if (!routeBounds.isEmpty()) {
+          fitBoundsWithInsets(routeBounds);
+        }
+        return true;
+      } catch {
+        return false;
+      }
     };
 
     if (travelMode === "transit") {
       transitLayer.current = new window.google.maps.TransitLayer();
       transitLayer.current.setMap(map);
-      void getRailPath(route).then((points) => {
-        if (renderVersion.current !== currentRenderVersion || points.length < 2) {
-          return;
-        }
-
-        directionsRenderers.current.forEach((renderer) => renderer.setMap(null));
-        directionsRenderers.current = [];
-        drawPolyline(points, "transit");
-      });
     }
 
-    const fallback = () => {
-      directionsRenderers.current.forEach((renderer) => renderer.setMap(null));
-      directionsRenderers.current = [];
-      // Public transit must follow real rail geometry. Do not imply an
-      // unavailable route by drawing a straight line between stations.
-      if (travelMode !== "transit" && path.length >= 2) {
+    const renderRoute = async () => {
+      if (await renderGoogleRoute(true)) {
+        return;
+      }
+      if (renderVersion.current !== currentRenderVersion) {
+        return;
+      }
+      if (travelMode === "transit" && (await renderGoogleRoute(false))) {
+        return;
+      }
+      if (renderVersion.current !== currentRenderVersion) {
+        return;
+      }
+
+      if (travelMode === "transit") {
+        const points = await getRailPath(route);
+        if (renderVersion.current === currentRenderVersion && points.length >= 2) {
+          drawPolyline(points, "transit");
+        }
+        return;
+      }
+
+      if (path.length >= 2) {
         drawPolyline(path, travelMode);
       }
     };
 
-    sendRequest(
-      buildDirectionsRequest(true),
-      createRenderer(),
-      (ok) => {
-        if (ok) {
-          return;
-        }
-        if (travelMode === "transit") {
-          sendRequest(buildDirectionsRequest(false), createRenderer(), (retryOk) => {
-            if (!retryOk) {
-              fallback();
-            }
-          });
-          return;
-        }
-        fallback();
-      }
-    );
+    void renderRoute();
   }, [center, fitBoundsWithInsets, getRailPath, mapStatus, route, routeWaypointSpot, showCurrentLocation]);
 
   useEffect(() => {
