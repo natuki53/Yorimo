@@ -63,6 +63,9 @@ services:
     image: cloudflare/cloudflared:2026.7.1
     profiles: ["public"]
     restart: unless-stopped
+    # Compose file secrets are bind-mounted with the source file's 0600 mode.
+    # Run this dedicated connector as root so the host token can stay owner-only.
+    user: "0:0"
     depends_on:
       app:
         condition: service_healthy
