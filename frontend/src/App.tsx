@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthGate, type AuthMode, type AuthSubmitPayload } from "./components/AuthDialog";
 import { tabToPath, type AppTab } from "./components/BottomNav";
 import { DesktopLayout } from "./components/DesktopLayout";
@@ -120,6 +120,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const recommendationAbortRef = useRef<AbortController | null>(null);
 
   const currentRoute = selectedRouteId ? routes.find((route) => route.id === selectedRouteId) : undefined;
   const effectiveCurrentLocation = currentLocationResolved
@@ -169,11 +170,15 @@ function App() {
   const refreshRecommendations = useCallback(
     async (nextToken = token, nextRoutes = routes, nextSelectedRouteId: string | null | undefined = undefined) => {
       if (!nextToken) {
+        recommendationAbortRef.current?.abort();
         setRecommendations([]);
         setApiMessage(null);
         return;
       }
 
+      recommendationAbortRef.current?.abort();
+      const controller = new AbortController();
+      recommendationAbortRef.current = controller;
       setLoading(true);
       try {
         const routeId = nextSelectedRouteId === undefined ? selectedRouteId : nextSelectedRouteId;
@@ -191,16 +196,21 @@ function App() {
           budgetMax,
           mood,
           interestTags: activeTags
-        });
+        }, controller.signal);
+        if (controller.signal.aborted) return;
         setRecommendations(result.items);
         setSpots(result.items.map((item) => item.spot));
         setSelectedSpot(result.items[0]?.spot ?? null);
         setApiMessage(null);
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
         setRecommendations([]);
         setApiMessage("現在地周辺のおすすめを取得できませんでした。時間をおいてもう一度お試しください。");
       } finally {
-        setLoading(false);
+        if (recommendationAbortRef.current === controller) {
+          recommendationAbortRef.current = null;
+          setLoading(false);
+        }
       }
     },
     [
@@ -566,8 +576,12 @@ function App() {
 
   useEffect(() => {
     if (token && routeDataReady) {
-      void refreshRecommendations();
+      const timeoutId = window.setTimeout(() => {
+        void refreshRecommendations();
+      }, 500);
+      return () => window.clearTimeout(timeoutId);
     }
+    return undefined;
   }, [
     activeTags,
     availableMinutes,
@@ -577,6 +591,13 @@ function App() {
     currentLocationResolved,
     routeDataReady
   ]);
+
+  useEffect(
+    () => () => {
+      recommendationAbortRef.current?.abort();
+    },
+    []
+  );
 
   const commonProps = {
     activeTab,

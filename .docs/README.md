@@ -20,6 +20,7 @@
 | [10-frontend-backend-contract.md](./10-frontend-backend-contract.md) | フロントエンド接続用API契約とTypeScript型 |
 | [11-security-and-privacy.md](./11-security-and-privacy.md) | セキュリティ、プライバシー、未成年配慮 |
 | [12-future-extension.md](./12-future-extension.md) | Google Maps、AI推薦、メディア基盤、管理機能などの拡張案 |
+| [13-home-server-deployment.md](./13-home-server-deployment.md) | 自宅サーバー、Docker Compose、Cloudflare Tunnel、公開・停止手順 |
 
 ## 推奨の読む順番
 

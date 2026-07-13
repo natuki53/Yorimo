@@ -5,6 +5,8 @@ design-system/yorimo/
 .env
 .env.*
 !.env.example
+!.env.production.example
+secrets/
 coverage/
 .DS_Store
 *.log

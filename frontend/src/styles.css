@@ -1787,6 +1787,22 @@ button.app-chip {
   gap: 12px;
 }
 
+.prototype-data-notice {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  color: #7c2d12;
+  display: grid;
+  font-size: 12px;
+  gap: 3px;
+  line-height: 1.55;
+  padding: 10px 12px;
+}
+
+.prototype-data-notice strong {
+  font-size: 13px;
+}
+
 .auth-progress {
   display: grid;
   gap: 6px;
